@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-ui: 'DM Sans', system-ui, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  color: black;
+}
