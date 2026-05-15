@@ -1,28 +1,20 @@
 import { useState } from "react";
 
+import { useWeather } from "../../hooks/useWeather";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
 import { SwitchModeDialog } from "./SwitchModeDialog";
 import { Timer } from "./Timer";
+import { WeatherBackground } from "./WeatherBackground";
 import { WordChip, type ChipColor } from "./WordChip";
 
 type Mode = "game" | "freewrite";
-type WeatherCondition = "Clear" | "Rain" | "Snow" | "Thunderstorm" | "Clouds";
 
 const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
 
-const DUMMY: { theme: string; words: string[]; weather: WeatherCondition } = {
+const DUMMY = {
   theme: "late night thoughts",
   words: ["quietly", "spiral", "anyway"],
-  weather: "Rain",
-};
-
-const WEATHER_GRADIENTS: Record<WeatherCondition, string> = {
-  Rain: "linear-gradient(135deg, #1a1a2e, #2d3561)",
-  Thunderstorm: "linear-gradient(135deg, #0f0f1a, #1e2040)",
-  Clouds: "linear-gradient(135deg, #1c1c2e, #3a3a5c)",
-  Clear: "linear-gradient(135deg, #1a2a3e, #2e5090)",
-  Snow: "linear-gradient(135deg, #1e2535, #354060)",
 };
 
 function formatDate(date: Date): string {
@@ -34,6 +26,7 @@ function formatDate(date: Date): string {
 }
 
 export default function GameScreen() {
+  const { weather, locationDenied } = useWeather();
   const [mode, setMode] = useState<Mode>("game");
   const [sentence, setSentence] = useState("");
   const [timerStarted, setTimerStarted] = useState(false);
@@ -78,13 +71,26 @@ export default function GameScreen() {
   };
 
   const today = formatDate(new Date());
-  const gradient = WEATHER_GRADIENTS[DUMMY.weather];
 
   return (
     <>
+      <WeatherBackground weather={weather} />
+      {locationDenied && (
+        <p
+          style={{
+            position: "fixed",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            zIndex: 10,
+          }}
+          className="text-xs tracking-wide text-white/30"
+        >
+          Allow location access for a live weather background
+        </p>
+      )}
       <div
         className="flex min-h-screen items-center justify-center p-4"
-        style={{ background: gradient }}
+        style={{ position: "relative", zIndex: 1 }}
       >
         <div className="flex w-full max-w-[560px] flex-col gap-6">
           {/* Header row — aligns with card edges */}
@@ -110,6 +116,8 @@ export default function GameScreen() {
           <div
             className="flex w-full flex-col gap-8"
             style={{
+              position: "relative",
+              zIndex: 10,
               background: "rgba(255,255,255,0.08)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.12)",
@@ -177,7 +185,6 @@ export default function GameScreen() {
           </div>
         </div>
       </div>
-
       {pendingMode && (
         <SwitchModeDialog
           onConfirm={handleModeConfirm}
