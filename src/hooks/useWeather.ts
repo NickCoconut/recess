@@ -37,6 +37,14 @@ function formatUnixTime(unix: number): string {
   });
 }
 
+const WEATHER_CACHE_KEY = "recess_weather_cache";
+const WEATHER_CACHE_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+type WeatherCache = {
+  timestamp: number;
+  data: WeatherData;
+};
+
 // Fallback weather data for when the user's location cannot be retrieved or access is denied
 function buildFallback(): WeatherData {
   const config = weatherConfig["Cloudy"];
@@ -58,16 +66,29 @@ export function useWeather(): UseWeatherResult {
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY as string;
+    // Check cache before requesting location — fresh cache skips geolocation entirely
+    try {
+      const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+      if (raw) {
+        const cached: WeatherCache = JSON.parse(raw);
+        const ageMs = Date.now() - cached.timestamp;
+        if (ageMs < WEATHER_CACHE_DURATION_MS) {
+          setWeather(cached.data);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Cache read failed (corrupted JSON etc) — fall through to geolocation
+      localStorage.removeItem(WEATHER_CACHE_KEY);
+    }
 
     navigator.geolocation.getCurrentPosition(
       // Success callback: called when the user's location is successfully retrieved
       async (position) => {
         const { latitude: lat, longitude: lon } = position.coords;
         try {
-          const res = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`,
-          );
+          const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
           if (!res.ok) throw new Error("Weather fetch failed");
 
           const data = (await res.json()) as {
@@ -93,7 +114,7 @@ export function useWeather(): UseWeatherResult {
           const config = weatherConfig[group];
           const videoSrc = getRandomVideo(config);
 
-          setWeather({
+          const mappedWeatherData: WeatherData = {
             conditionCode,
             iconCode,
             description,
@@ -102,7 +123,21 @@ export function useWeather(): UseWeatherResult {
             config,
             videoSrc,
             sunInfo,
-          });
+          };
+
+          // Save to cache after successful fetch
+          try {
+            const newCache: WeatherCache = {
+              timestamp: Date.now(),
+              data: mappedWeatherData,
+            };
+            localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(newCache));
+          } catch {
+            // localStorage full or unavailable — fail silently
+            console.warn("Weather cache write failed");
+          }
+
+          setWeather(mappedWeatherData);
         } catch {
           setWeather(buildFallback());
         } finally {

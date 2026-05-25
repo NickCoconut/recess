@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-theme",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

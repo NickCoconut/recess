@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { useTheme } from "../../hooks/useTheme";
 import { useWeather } from "../../hooks/useWeather";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
@@ -10,13 +11,6 @@ import { WordChip, type ChipColor } from "./WordChip";
 
 type Mode = "game" | "freewrite";
 
-const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
-
-const DUMMY = {
-  theme: "late night thoughts",
-  words: ["quietly", "spiral", "anyway"],
-};
-
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
     month: "long",
@@ -25,8 +19,11 @@ function formatDate(date: Date): string {
   });
 }
 
+const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
+
 export default function GameScreen() {
   const { weather, locationDenied } = useWeather();
+  const { themeData, loading: themeLoading } = useTheme();
   const [mode, setMode] = useState<Mode>("game");
   const [sentence, setSentence] = useState("");
   const [timerStarted, setTimerStarted] = useState(false);
@@ -59,6 +56,8 @@ export default function GameScreen() {
     if (timerStarted || mode !== "game") return;
     setTimerStarted(true);
   };
+
+  const maxLength = mode === "game" ? 200 : 500;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const canSubmit = !!sentence.trim();
@@ -134,17 +133,29 @@ export default function GameScreen() {
                 <p className="text-sm tracking-widest text-white/40 uppercase">
                   today's theme
                 </p>
-                <h1 className="font-heading text-4xl font-semibold text-white capitalize">
-                  {DUMMY.theme}
-                </h1>
+                {themeLoading || !themeData ? (
+                  <div className="h-10 w-48 animate-pulse rounded-md bg-white/10" />
+                ) : (
+                  <h1 className="font-heading text-4xl font-semibold text-white capitalize">
+                    {themeData.theme}
+                  </h1>
+                )}
               </div>
             )}
 
             {mode === "game" && (
               <div className="flex flex-wrap justify-center gap-2.5">
-                {DUMMY.words.map((word, i) => (
-                  <WordChip key={word} word={word} color={CHIP_COLORS[i]} />
-                ))}
+                {themeLoading || !themeData ? (
+                  <>
+                    <div className="h-8 w-20 animate-pulse rounded-full bg-white/10" />
+                    <div className="h-8 w-24 animate-pulse rounded-full bg-white/10" />
+                    <div className="h-8 w-16 animate-pulse rounded-full bg-white/10" />
+                  </>
+                ) : (
+                  themeData.words.map((word, i) => (
+                    <WordChip key={word} word={word} color={CHIP_COLORS[i]} />
+                  ))
+                )}
               </div>
             )}
 
@@ -161,6 +172,7 @@ export default function GameScreen() {
                 onChange={setSentence}
                 onFocus={startTimer}
                 isGameOver={isGameOver}
+                maxLength={maxLength}
               />
             </div>
 
