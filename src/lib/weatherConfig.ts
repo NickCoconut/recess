@@ -17,57 +17,57 @@ const CDN = "https://res.cloudinary.com/recessprod/video/upload/q_auto,f_auto";
 export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
   Clear_day: {
     videos: [
-      `${CDN}/v1778703879/clear_day_1_zfknxe.mp4`,
-      `${CDN}/v1778703879/clear_day_1_zfknxe.mp4`,
-      `${CDN}/v1778703879/clear_day_1_zfknxe.mp4`,
+      `${CDN}/v1779859690/clear_day_1_ivcl5l.mp4`,
+      `${CDN}/v1779859688/clear_day_2_igaupb.mp4`,
+      `${CDN}/v1779860607/clear_day_3_bmauu8.mp4`,
     ],
     overlayOpacity: 0.25,
   },
   Clear_night: {
     videos: [
-      `${CDN}/v1778703879/clear_night_1_lkyuiw.mp4`,
-      `${CDN}/v1778703879/clear_night_1_lkyuiw.mp4`,
-      `${CDN}/v1778703879/clear_night_1_lkyuiw.mp4`,
+      `${CDN}/v1779859690/clear_night_1_qqxmdr.mp4`,
+      `${CDN}/v1779859691/clear_night_2_uy6bii.mp4`,
+      `${CDN}/v1779859692/clear_night_3_no6khf.mp4`,
     ],
     overlayOpacity: 0.35,
   },
   Cloudy: {
     videos: [
-      `${CDN}/v1778703879/cloudy_1_dbpibv.mp4`,
-      `${CDN}/v1778703879/cloudy_1_dbpibv.mp4`,
-      `${CDN}/v1778703879/cloudy_1_dbpibv.mp4`,
+      `${CDN}/v1779859692/cloudy_1_av7j3b.mp4`,
+      `${CDN}/v1779859695/cloudy_2_xlkyxg.mp4`,
+      `${CDN}/v1779859699/cloudy_3_br8tee.mp4`,
     ],
     overlayOpacity: 0.45,
   },
   Rain: {
     videos: [
-      `${CDN}/v1778703879/rain_1_ks9l2y.mp4`,
-      `${CDN}/v1778703879/rain_1_ks9l2y.mp4`,
-      `${CDN}/v1778703879/rain_1_ks9l2y.mp4`,
+      `${CDN}/v1779859705/rain_1_g2vqqr.mp4`,
+      `${CDN}/v1779859707/rain_2_qkjnxh.mp4`,
+      `${CDN}/v1779859708/rain_3_kv10pf.mp4`,
     ],
     overlayOpacity: 0.5,
   },
   Thunderstorm: {
     videos: [
-      `${CDN}/v1778703879/thunderstorm_1_jqpfho.mp4`,
-      `${CDN}/v1778703879/thunderstorm_1_jqpfho.mp4`,
-      `${CDN}/v1778703879/thunderstorm_1_jqpfho.mp4`,
+      `${CDN}/v1779859714/thunderstorm_1_bamgam.mp4`,
+      `${CDN}/v1779859714/thunderstorm_2_um6ooe.mp4`,
+      `${CDN}/v1779859716/thunderstorm_3_rqytrt.mp4`,
     ],
     overlayOpacity: 0.6,
   },
   Snow: {
     videos: [
-      `${CDN}/v1778703879/snow_1_ivvpt8.mp4`,
-      `${CDN}/v1778703879/snow_1_ivvpt8.mp4`,
-      `${CDN}/v1778703879/snow_1_ivvpt8.mp4`,
+      `${CDN}/v1779859709/snow_1_fhe9cb.mp4`,
+      `${CDN}/v1779859710/snow_2_r0gciu.mp4`,
+      `${CDN}/v1779859711/snow_3_zsjn5v.mp4`,
     ],
     overlayOpacity: 0.3,
   },
   Atmosphere: {
     videos: [
-      `${CDN}/v1778703880/foggy_1_nj91ky.mp4`,
-      `${CDN}/v1778703880/foggy_1_nj91ky.mp4`,
-      `${CDN}/v1778703880/foggy_1_nj91ky.mp4`,
+      `${CDN}/v1779859702/fog_1_ui1xdc.mp4`,
+      `${CDN}/v1779859703/fog_2_kevjbj.mp4`,
+      `${CDN}/v1779859708/fog_3_rdlpme.mp4`,
     ],
     overlayOpacity: 0.45,
   },
