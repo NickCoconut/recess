@@ -2,16 +2,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
+
+  const supabaseAdmin = createClient(
+    process.env.VITE_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
   // Verify this is a legitimate Vercel cron invocation
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Generate theme with Anthropic
     console.log(`Generating theme for ${pacificDateStr}...`);
-    const generated = await generateThemeFromAI(pacificDateStr);
+    const generated = await generateThemeFromAI(anthropic, pacificDateStr);
 
     // Insert into Supabase
     const { error: insertError } = await supabaseAdmin
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function generateThemeFromAI(date: string) {
+async function generateThemeFromAI(anthropic: Anthropic, date: string) {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 300,

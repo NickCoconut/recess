@@ -42,7 +42,7 @@ export function useTheme() {
           .select("theme, words, date")
           .order("date", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle(); // database might be empty
 
         if (data && !error) {
           const theme: ThemeData = {
