@@ -55,7 +55,7 @@ function buildFallback(): WeatherData {
     city: "",
     group: "Cloudy",
     config,
-    videoSrc: getRandomVideo(config),
+    videoSrc: config.videos[2],
     sunInfo: null,
   };
 }

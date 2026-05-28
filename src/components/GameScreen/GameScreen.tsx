@@ -23,6 +23,7 @@ const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
 
 export default function GameScreen() {
   const { weather, locationDenied } = useWeather();
+  const overlayOpacity = weather.config.overlayOpacity;
   const { themeData, loading: themeLoading } = useTheme();
   const [mode, setMode] = useState<Mode>("game");
   const [sentence, setSentence] = useState("");
@@ -117,7 +118,7 @@ export default function GameScreen() {
             style={{
               position: "relative",
               zIndex: 10,
-              background: "rgba(255,255,255,0.08)",
+              background: `rgba(0,0,0,${overlayOpacity})`,
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.12)",
               borderRadius: "16px",

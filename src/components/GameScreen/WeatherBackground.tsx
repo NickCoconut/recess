@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import type { WeatherData } from "../../hooks/useWeather";
 
@@ -7,24 +7,19 @@ type WeatherBackgroundProps = {
 };
 
 export function WeatherBackground({ weather }: WeatherBackgroundProps) {
-  const { videoSrc, config, city, description, sunInfo } = weather;
+  const { videoSrc, city, description, sunInfo } = weather;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [opacity, setOpacity] = useState(1);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const video = videoRef.current;
     if (!video) return;
-
-    setOpacity(0);
-
-    const timer = setTimeout(() => {
-      video.src = videoSrc;
-      video.load();
-      void video.play();
-      setOpacity(1);
-    }, 800);
-
-    return () => clearTimeout(timer);
+    video.load();
+    void video.play();
   }, [videoSrc]);
 
   const capitalizedDescription =
@@ -58,20 +53,6 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity,
-          transition: "opacity 800ms ease",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "black",
-          opacity: config.overlayOpacity,
         }}
       />
 
