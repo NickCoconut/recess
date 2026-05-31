@@ -2,11 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabaseAdmin = createClient(
     process.env.VITE_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Generate theme with Anthropic
     console.log(`Generating theme for ${pacificDateStr}...`);
-    const generated = await generateThemeFromAI(anthropic, pacificDateStr);
+    const generated = await generateThemeFromAI(pacificDateStr);
 
     // Insert into Supabase
     const { error: insertError } = await supabaseAdmin
@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function generateThemeFromAI(anthropic: Anthropic, date: string) {
+async function generateThemeFromAI(date: string) {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 300,
@@ -99,7 +99,7 @@ No explanation. No preamble. No markdown. No backticks.
 Exactly this shape:
 {
   "theme": "inbox anxiety",
-  "words": ["deadline", "allegedly", "anyway"]
+  "words": ["deadline", "questionable", "eventually"]
 }`,
 
     messages: [
@@ -137,6 +137,16 @@ Warm, witty, self-aware, sometimes dry.
 Never preachy. Never heavy-handed. Never trying too hard.
 The emotional register: not quite comedy but funny,
 not quite poetry but poetic, not quite therapy but real.
+
+CONCRETE, NOT PRECIOUS — important:
+The poetic aftertaste comes from naming something REAL,
+not from sounding deep. Reach for the specific, recognizable
+moment — not the abstract mood word. A stranger should get it
+on the first read and think "oh, THAT." If a theme sounds
+profound but you can't picture the actual situation, it's too
+precious — cut it and name the concrete thing instead.
+→ "the 3am spiral" (concrete) not "nocturnal unease" (vague)
+→ "comfort rewatch" (concrete) not "the ache of familiarity"
 
 DRAW FROM ANYWHERE — no category limits:
 daily rituals and routines, work and career, meetings,
@@ -186,7 +196,9 @@ BAD THEME EXAMPLES — never generate these:
 "why nobody can afford homes anymore" ← sentence + blame
 "things the government ruined" ← political + divisive
 "stress" ← too vague, one word
-"that feeling when Sunday night comes 
+"the weight of unspoken things" ← abstract, precious, can't picture it
+"ambient melancholy" ← mood word, sounds deep but says nothing
+"that feeling when Sunday night comes
 and Monday is already there" ← sentence, too long
 
 ━━━ WORD RULES ━━━
@@ -198,6 +210,15 @@ The 3 words must work as a set — not independently.
 Together they should make a user think:
 "I could write something funny with these"
 AND "I could write something real with these"
+
+VARIETY — IMPORTANT:
+The reference lists and the example JSON are inspiration 
+ONLY — do NOT default to them. In particular, avoid 
+reaching for the obvious go-to words (especially "anyway", 
+which is overused). Pick fresh, less predictable words each 
+time so that daily sets feel different from one another. If 
+a word feels like the safe/default choice, choose a more 
+surprising one instead.
 
 WORD 1 — GROUNDED:
 Concrete word with cultural weight or everyday reality.
@@ -214,19 +235,20 @@ subscription, deposit, meeting, coffee, paycheck,
 traffic, waiting room, group chat, highlight reel
 
 WORD 2 — TWISTED:
-Creates unexpected humor, irony, or a sharp perspective 
-shift. Makes the sentence go sideways in the best way.
-Native English speakers recognize this as sarcastic,
-self-aware, or surprisingly accurate.
+An ADJECTIVE that creates unexpected humor, irony, or a 
+sharp perspective shift. Makes the sentence go sideways in 
+the best way. Native English speakers recognize this as 
+sarcastic, self-aware, or surprisingly accurate.
 Adds the "wait, that's exactly right" reaction.
+Must be an adjective — a describing word, not an adverb 
+(no -ly words) and not a noun.
 
-Strong twisted words for reference:
-allegedly, technically, aggressively, suspiciously,
-theoretically, voluntarily, accidentally, somehow,
-professionally, officially, desperately, enthusiastically,
-ironically, briefly, literally, clearly, obviously,
-apparently, conveniently, unexpectedly, remarkably,
-genuinely, naturally, realistically, objectively
+Strong twisted adjectives for reference:
+suspicious, aggressive, theoretical, questionable,
+professional, ironic, accidental, reluctant, dramatic,
+casual, oblivious, smug, feral, ominous, wholesome,
+chaotic, petty, delusional, unhinged, mild, optimistic,
+sentimental, defensive, ambitious, unbothered
 
 WORD 3 — RESONANT:
 Lands with emotional weight, poetic quality, or 
@@ -235,11 +257,11 @@ sentence feel like it means more than it says.
 Lingers after the sentence ends.
 
 Strong resonant words for reference:
-anyway, eventually, almost, barely, finally, quietly,
-still, yet, suddenly, again, always, never, together,
-apart, here, honestly, simply, gently, deeply, softly,
-briefly, slowly, clearly, once, twice, lately, recently,
-somehow, somewhere, somehow, everything, nothing
+eventually, almost, barely, finally, quietly, still, yet,
+suddenly, again, always, never, together, apart, here,
+honestly, simply, gently, deeply, softly, briefly, slowly,
+clearly, once, twice, lately, recently, somehow, somewhere,
+everything, nothing, anyway
 
 CRITICAL — the 3 words cannot all pull 
 in the same direction:

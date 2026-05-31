@@ -4,9 +4,13 @@ import type { WeatherData } from "../../hooks/useWeather";
 
 type WeatherBackgroundProps = {
   weather: WeatherData;
+  locationDenied: boolean;
 };
 
-export function WeatherBackground({ weather }: WeatherBackgroundProps) {
+export function WeatherBackground({
+  weather,
+  locationDenied,
+}: WeatherBackgroundProps) {
   const { videoSrc, city, description, sunInfo } = weather;
   const videoRef = useRef<HTMLVideoElement>(null);
   const isFirstRender = useRef(true);
@@ -78,6 +82,20 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
           </p>
         )}
       </div>
+
+      {locationDenied && (
+        <p
+          style={{
+            position: "absolute",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            zIndex: 1,
+          }}
+          className="text-xs tracking-wide text-white/30"
+        >
+          Allow location access for a live weather background
+        </p>
+      )}
     </div>
   );
 }

@@ -33,7 +33,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
   },
   Cloudy: {
     videos: [
-      `${CDN}/v1779859692/cloudy_1_av7j3b.mp4`,
+      `${CDN}/v1779999823/cloudy_1_pggpze.mp4`,
       `${CDN}/v1779859695/cloudy_2_xlkyxg.mp4`,
       `${CDN}/v1779859699/cloudy_3_br8tee.mp4`,
     ],

@@ -1,15 +1,20 @@
 import { useState } from "react";
 
-import { useTheme } from "../../hooks/useTheme";
-import { useWeather } from "../../hooks/useWeather";
+import type { ThemeData } from "../../lib/anthropic";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
 import { SwitchModeDialog } from "./SwitchModeDialog";
 import { Timer } from "./Timer";
-import { WeatherBackground } from "./WeatherBackground";
 import { WordChip, type ChipColor } from "./WordChip";
 
 type Mode = "game" | "freewrite";
+
+interface GameScreenProps {
+  overlayOpacity: number;
+  themeData: ThemeData | null;
+  themeLoading: boolean;
+  onSubmit: (sentence: string, mode: Mode) => void;
+}
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
@@ -21,10 +26,12 @@ function formatDate(date: Date): string {
 
 const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
 
-export default function GameScreen() {
-  const { weather, locationDenied } = useWeather();
-  const overlayOpacity = weather.config.overlayOpacity;
-  const { themeData, loading: themeLoading } = useTheme();
+export default function GameScreen({
+  overlayOpacity,
+  themeData,
+  themeLoading,
+  onSubmit,
+}: GameScreenProps) {
   const [mode, setMode] = useState<Mode>("game");
   const [sentence, setSentence] = useState("");
   const [timerStarted, setTimerStarted] = useState(false);
@@ -60,34 +67,17 @@ export default function GameScreen() {
 
   const maxLength = mode === "game" ? 200 : 500;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const canSubmit = !!sentence.trim();
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
-    setIsSubmitting(true);
-    console.log("Sentence submitted:", sentence);
-    setIsSubmitting(false);
+    onSubmit(sentence, mode);
   };
 
   const today = formatDate(new Date());
 
   return (
     <>
-      <WeatherBackground weather={weather} />
-      {locationDenied && (
-        <p
-          style={{
-            position: "fixed",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            zIndex: 10,
-          }}
-          className="text-xs tracking-wide text-white/30"
-        >
-          Allow location access for a live weather background
-        </p>
-      )}
       <div
         className="flex min-h-screen items-center justify-center p-4"
         style={{ position: "relative", zIndex: 1 }}
@@ -188,16 +178,15 @@ export default function GameScreen() {
                     : "cursor-not-allowed bg-white/10 text-white/25"
                 } `}
               >
-                {isSubmitting
-                  ? "saving..."
-                  : mode === "game"
-                    ? "that's my sentence →"
-                    : "that's my free write →"}
+                {mode === "game"
+                  ? "that's my sentence →"
+                  : "that's my free write →"}
               </button>
             </div>
           </div>
         </div>
       </div>
+
       {pendingMode && (
         <SwitchModeDialog
           onConfirm={handleModeConfirm}

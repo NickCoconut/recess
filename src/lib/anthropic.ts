@@ -1,34 +1,27 @@
 export type ThemeData = {
-  theme: string
-  words: [string, string, string]
-}
+  theme: string;
+  words: [string, string, string];
+};
 
 export type VibeData = {
-  readout: string
-}
+  readout: string;
+};
 
-// Vibe readout will be implemented later
 export async function fetchVibeReadout(
   sentence: string,
-  words: string[],
+  mode: "game" | "freewrite",
   theme: string,
-  mode: 'game' | 'freewrite'
+  words: string[],
 ): Promise<VibeData> {
-  const response = await fetch('/api/anthropic', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'generate_vibe',
-      sentence,
-      words,
-      theme,
-      mode
-    })
-  })
+  const response = await fetch("/api/vibe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sentence, mode, theme, words }),
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to generate vibe readout')
+    throw new Error("Failed to generate vibe readout");
   }
 
-  return response.json()
+  return response.json() as Promise<VibeData>;
 }
