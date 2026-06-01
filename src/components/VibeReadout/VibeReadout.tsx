@@ -141,7 +141,7 @@ export default function VibeReadout({
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed text-white/85">
+                  <p className="text-lg leading-relaxed text-white/85">
                     {displayReadout}
                   </p>
                 )}
