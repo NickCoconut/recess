@@ -4,14 +4,13 @@ import type { WeatherData } from "../../hooks/useWeather";
 
 type WeatherBackgroundProps = {
   weather: WeatherData;
-  locationDenied: boolean;
 };
 
-export function WeatherBackground({
-  weather,
-  locationDenied,
-}: WeatherBackgroundProps) {
+export function WeatherBackground({ weather }: WeatherBackgroundProps) {
   const { videoSrc, city, description, sunInfo } = weather;
+
+  // Show location hint if location is denied
+  const showLocationHint = !sunInfo;
   const videoRef = useRef<HTMLVideoElement>(null);
   const isFirstRender = useRef(true);
 
@@ -83,7 +82,7 @@ export function WeatherBackground({
         )}
       </div>
 
-      {locationDenied && (
+      {showLocationHint && (
         <p
           style={{
             position: "absolute",

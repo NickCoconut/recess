@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { getPacificDate } from "../lib/date";
 import type { ThemeData } from "../lib/anthropic";
 
 const CACHE_KEY = "recess_theme_cache";
@@ -9,13 +10,6 @@ type ThemeCache = {
   data: ThemeData;
 };
 
-function getPacificDateStr(): string {
-  // Returns current date in Pacific Time as YYYY-MM-DD (e.g., "2024-05-09")
-  return new Date().toLocaleDateString("en-CA", {
-    timeZone: "America/Los_Angeles",
-  });
-}
-
 export function useTheme() {
   const [themeData, setThemeData] = useState<ThemeData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +17,7 @@ export function useTheme() {
   useEffect(() => {
     async function loadTheme() {
       try {
-        const todayPT = getPacificDateStr();
+        const todayPT = getPacificDate();
 
         // Check cached in localStorage
         const raw = localStorage.getItem(CACHE_KEY);

@@ -66,6 +66,8 @@ export function useWeather(): UseWeatherResult {
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     // Check cache before requesting location — fresh cache skips geolocation entirely
     try {
       const raw = localStorage.getItem(WEATHER_CACHE_KEY);
@@ -73,8 +75,10 @@ export function useWeather(): UseWeatherResult {
         const cached: WeatherCache = JSON.parse(raw);
         const ageMs = Date.now() - cached.timestamp;
         if (ageMs < WEATHER_CACHE_DURATION_MS) {
-          setWeather(cached.data);
-          setLoading(false);
+          if (!cancelled) {
+            setWeather(cached.data);
+            setLoading(false);
+          }
           return;
         }
       }
@@ -137,20 +141,25 @@ export function useWeather(): UseWeatherResult {
             console.warn("Weather cache write failed");
           }
 
-          setWeather(mappedWeatherData);
+          if (!cancelled) setWeather(mappedWeatherData);
         } catch {
-          setWeather(buildFallback());
+          if (!cancelled) setWeather(buildFallback());
         } finally {
-          setLoading(false);
+          if (!cancelled) setLoading(false);
         }
       },
       // Error callback: called when the user's location cannot be retrieved or access is denied
       () => {
+        if (cancelled) return;
         setWeather(buildFallback());
         setLocationDenied(true);
         setLoading(false);
       },
     );
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { weather, loading, locationDenied };
