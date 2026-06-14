@@ -60,31 +60,36 @@ function buildFallback(): WeatherData {
   };
 }
 
+// Read the cached weather regardless of age. Returns null if there's no cache
+function readCache(): WeatherCache | null {
+  try {
+    const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as WeatherCache;
+  } catch {
+    // Corrupted JSON etc — drop it so we re-fetch cleanly
+    localStorage.removeItem(WEATHER_CACHE_KEY);
+    return null;
+  }
+}
+
 export function useWeather(): UseWeatherResult {
-  const [weather, setWeather] = useState<WeatherData>(buildFallback);
+  // Seed from any cached weather (even stale) so returning users never see the
+  // Cloudy fallback flash. Only brand-new / cache-less visitors start on Cloudy.
+  const [weather, setWeather] = useState<WeatherData>(
+    () => readCache()?.data ?? buildFallback(),
+  );
   const [loading, setLoading] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    // Check cache before requesting location — fresh cache skips geolocation entirely
-    try {
-      const raw = localStorage.getItem(WEATHER_CACHE_KEY);
-      if (raw) {
-        const cached: WeatherCache = JSON.parse(raw);
-        const ageMs = Date.now() - cached.timestamp;
-        if (ageMs < WEATHER_CACHE_DURATION_MS) {
-          if (!cancelled) {
-            setWeather(cached.data);
-            setLoading(false);
-          }
-          return;
-        }
-      }
-    } catch {
-      // Cache read failed (corrupted JSON etc) — fall through to geolocation
-      localStorage.removeItem(WEATHER_CACHE_KEY);
+    const cached = readCache();
+    // Fresh cache is already displayed via the initial state — skip geolocation.
+    if (cached && Date.now() - cached.timestamp < WEATHER_CACHE_DURATION_MS) {
+      setLoading(false);
+      return;
     }
 
     navigator.geolocation.getCurrentPosition(
@@ -143,7 +148,9 @@ export function useWeather(): UseWeatherResult {
 
           if (!cancelled) setWeather(mappedWeatherData);
         } catch {
-          if (!cancelled) setWeather(buildFallback());
+          // Revalidation failed — keep showing stale cache if we have it,
+          // otherwise fall back to Cloudy.
+          if (!cancelled && !cached) setWeather(buildFallback());
         } finally {
           if (!cancelled) setLoading(false);
         }
@@ -151,7 +158,8 @@ export function useWeather(): UseWeatherResult {
       // Error callback: called when the user's location cannot be retrieved or access is denied
       () => {
         if (cancelled) return;
-        setWeather(buildFallback());
+        // Only drop to Cloudy when we have no cached weather to keep showing.
+        if (!cached) setWeather(buildFallback());
         setLocationDenied(true);
         setLoading(false);
       },

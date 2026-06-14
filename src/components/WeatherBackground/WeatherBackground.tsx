@@ -68,33 +68,27 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
         }}
         className="flex flex-col gap-0.5"
       >
-        {hasLabel && (
-          <p className="text-xs tracking-wide text-white/40">
-            {city}
-            {city && description ? " · " : ""}
-            {capitalizedDescription}
+        {showLocationHint ? (
+          <p className="text-xs tracking-wide text-white/30">
+            Allow location access for a live weather background
           </p>
-        )}
-        {sunInfo && (
-          <p className="flex items-center gap-1 text-xs tracking-wide text-white/30">
-            {sunInfo.label} {sunInfo.time}
-          </p>
+        ) : (
+          <>
+            {hasLabel && (
+              <p className="text-xs tracking-wide text-white/40">
+                {city}
+                {city && description ? " · " : ""}
+                {capitalizedDescription}
+              </p>
+            )}
+            {sunInfo && (
+              <p className="flex items-center gap-1 text-xs tracking-wide text-white/30">
+                {sunInfo.label} {sunInfo.time}
+              </p>
+            )}
+          </>
         )}
       </div>
-
-      {showLocationHint && (
-        <p
-          style={{
-            position: "absolute",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            zIndex: 1,
-          }}
-          className="text-xs tracking-wide text-white/30"
-        >
-          Allow location access for a live weather background
-        </p>
-      )}
     </div>
   );
 }

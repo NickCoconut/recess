@@ -103,7 +103,7 @@ export function getWeatherGroup(
     return "Atmosphere";
   }
   if (conditionCode >= 801 && conditionCode <= 804) {
-    return "Cloudy";
+    return isNight ? "Clear_night" : "Cloudy";
   }
   return "Cloudy";
 }

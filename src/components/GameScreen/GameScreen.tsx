@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { ThemeData } from "../../lib/anthropic";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
+import { ShareToggle } from "./ShareToggle";
 import { SwitchModeDialog } from "./SwitchModeDialog";
 import { Timer } from "./Timer";
 import { WordChip, type ChipColor } from "./WordChip";
@@ -13,7 +14,7 @@ interface GameScreenProps {
   overlayOpacity: number;
   themeData: ThemeData | null;
   themeLoading: boolean;
-  onSubmit: (sentence: string, mode: Mode) => void;
+  onSubmit: (sentence: string, mode: Mode, isPublic: boolean) => void;
 }
 
 function formatDate(date: Date): string {
@@ -37,6 +38,7 @@ export default function GameScreen({
   const [timerStarted, setTimerStarted] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [pendingMode, setPendingMode] = useState<Mode | null>(null);
+  const [shareToFeed, setShareToFeed] = useState(true);
 
   const hasTyped = sentence.length > 0;
 
@@ -71,7 +73,9 @@ export default function GameScreen({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    onSubmit(sentence, mode);
+    // Free Write has no public posting concept — always private.
+    const isPublic = mode === "game" ? shareToFeed : false;
+    onSubmit(sentence, mode, isPublic);
   };
 
   const today = formatDate(new Date());
@@ -167,7 +171,7 @@ export default function GameScreen({
               />
             </div>
 
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col gap-4">
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
@@ -182,6 +186,9 @@ export default function GameScreen({
                   ? "that's my sentence →"
                   : "that's my free write →"}
               </button>
+              {mode === "game" && (
+                <ShareToggle checked={shareToFeed} onChange={setShareToFeed} />
+              )}
             </div>
           </div>
         </div>

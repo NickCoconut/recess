@@ -23,9 +23,9 @@ function App() {
 
   const overlayOpacity = userOpacity ?? weather.config.overlayOpacity;
 
-  const handleSubmit = (sentence: string, mode: Mode) => {
+  const handleSubmit = (sentence: string, mode: Mode, isPublic: boolean) => {
     if (!sentence.trim()) return;
-    setSubmitData({ sentence, mode });
+    setSubmitData({ sentence, mode, isPublic });
     setScreen("readout");
   };
 

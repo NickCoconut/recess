@@ -2,13 +2,22 @@ import { RefreshCw, Share } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { fetchVibeReadout, type ThemeData } from "../../lib/anthropic";
+import {
+  dummyFeed,
+  dummyPlayedToday,
+  type FeedItem,
+} from "../../lib/dummyFeed";
+import { FeedTab } from "./FeedTab";
 
 type Mode = "game" | "freewrite";
 
 export interface SubmitData {
   sentence: string;
   mode: Mode;
+  isPublic: boolean;
 }
+
+type Tab = "yours" | "today";
 
 interface VibeReadoutProps {
   overlayOpacity: number;
@@ -38,12 +47,40 @@ export default function VibeReadout({
   themeData,
   submitData,
 }: VibeReadoutProps) {
-  const { sentence, mode } = submitData;
+  const { sentence, mode, isPublic } = submitData;
   const words = themeData?.words ?? [];
 
   const [readout, setReadout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const showTabs = mode === "game";
+  const [tab, setTab] = useState<Tab>("yours");
+
+  // Local feed seeded from dummy data. On a public Game-Mode submit we prepend
+  // the user's own sentence (no diagnosis — that stays private to the author).
+  const [feed] = useState<FeedItem[]>(() => {
+    // TODO: replace with Supabase insert — post the public sentence to the feed.
+    if (mode === "game" && isPublic) {
+      const mine: FeedItem = {
+        id: "you",
+        sentence,
+        likes: 0,
+        likedByMe: false,
+        location: "",
+        weather: "",
+        time: "just now",
+        isMine: true,
+      };
+      return [mine, ...dummyFeed];
+    }
+    return dummyFeed;
+  });
+
+  // Every play counts toward the daily tally, even private ones that never
+  // surface in the visible feed.
+  // TODO: count private play server-side.
+  const playedToday = dummyPlayedToday + 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +126,6 @@ export default function VibeReadout({
       style={{ position: "relative", zIndex: 1 }}
     >
       <div className="flex w-full max-w-[560px] flex-col gap-6">
-        {/* Card */}
         <div
           className="flex w-full flex-col justify-between gap-6"
           style={{
@@ -104,98 +140,145 @@ export default function VibeReadout({
           }}
         >
           <div className="flex flex-col gap-6">
-            <p className="text-center font-mono text-xs tracking-[0.2em] text-white/40 uppercase">
-              your sentence
-            </p>
+            {showTabs && (
+              <div className="flex items-center justify-between gap-3">
+                <div
+                  className="inline-flex items-center gap-1 rounded-full p-1"
+                  style={{
+                    background: "rgba(0,0,0,0.5)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  {(["yours", "today"] as const).map((t) => {
+                    const active = tab === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTab(t)}
+                        className={`cursor-pointer rounded-full font-mono text-sm tracking-wide uppercase transition-all duration-200 ${
+                          active
+                            ? "bg-white font-semibold text-[#0f0f14] shadow-sm shadow-black/20"
+                            : "bg-transparent text-white/45 hover:text-white/75"
+                        }`}
+                        style={{
+                          padding: "0.4rem 1rem",
+                        }}
+                      >
+                        {t === "today" ? "Today's feed" : t}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <p className="text-center font-heading text-2xl leading-snug font-light text-white">
-              &ldquo;{sentence}&rdquo;
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <div
-                className="flex flex-col justify-center rounded-xl"
-                style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  minHeight: "160px",
-                  padding: "1.75rem",
-                }}
-              >
-                {loading ? (
-                  <p className="animate-pulse text-center font-mono text-sm tracking-wide text-white/40">
-                    reading your energy...
-                  </p>
-                ) : mode === "game" && parsed ? (
-                  <div className="flex items-baseline gap-2">
-                    <span className="shrink-0 font-mono text-xs tracking-[0.16em] text-white/40 uppercase">
-                      DIAGNOSIS:
-                    </span>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-lg font-semibold text-amber-300">
-                        {parsed.label}
-                      </span>
-                      <p className="text-base leading-relaxed text-white/75">
-                        {parsed.observation}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-lg leading-relaxed text-white/85">
-                    {displayReadout}
+                {tab === "today" && (
+                  <p className="font-mono text-sm text-amber-200/85">
+                    {playedToday} played
                   </p>
                 )}
               </div>
+            )}
 
-              {mode === "game" && words.length > 0 && (
-                <p className="text-center font-mono text-xs tracking-[0.12em] text-white/30">
-                  words used:{" "}
-                  {words.map((word, i) => (
-                    <span key={word}>
-                      <span
-                        className={
-                          isWordUsed(word, sentence)
-                            ? "line-through"
-                            : undefined
-                        }
-                      >
-                        {word}
-                      </span>
-                      {i < words.length - 1 ? " / " : ""}
-                    </span>
-                  ))}
+            {showTabs && tab === "today" ? (
+              <FeedTab items={feed} />
+            ) : (
+              <div className="flex flex-col gap-6">
+                <p className="text-center font-mono text-xs tracking-[0.2em] text-white/40 uppercase">
+                  your sentence
                 </p>
-              )}
-            </div>
+
+                <p className="text-center font-heading text-2xl leading-snug font-light text-white">
+                  &ldquo;{sentence}&rdquo;
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <div
+                    className="flex flex-col justify-center rounded-xl"
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      minHeight: "160px",
+                      padding: "1.75rem",
+                    }}
+                  >
+                    {loading ? (
+                      <p className="animate-pulse text-center font-mono text-base tracking-wide text-white/40">
+                        reading your energy...
+                      </p>
+                    ) : mode === "game" && parsed ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="shrink-0 font-mono text-xs tracking-[0.16em] text-white/40 uppercase">
+                          DIAGNOSIS:
+                        </span>
+                        <div className="flex flex-col gap-2">
+                          <span className="text-lg font-semibold text-amber-300">
+                            {parsed.label}
+                          </span>
+                          <p className="text-base leading-relaxed text-white/75">
+                            {parsed.observation}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-lg leading-relaxed text-white/85">
+                        {displayReadout}
+                      </p>
+                    )}
+                  </div>
+
+                  {mode === "game" && words.length > 0 && (
+                    <p className="text-center font-mono text-xs tracking-[0.12em] text-white/30">
+                      words used:{" "}
+                      {words.map((word, i) => (
+                        <span key={word}>
+                          <span
+                            className={
+                              isWordUsed(word, sentence)
+                                ? "line-through"
+                                : undefined
+                            }
+                          >
+                            {word}
+                          </span>
+                          {i < words.length - 1 ? " / " : ""}
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 text-lg font-semibold tracking-wide text-black transition-all duration-300"
-              style={{
-                border: "1px solid rgba(255,255,255,0.15)",
-                paddingTop: "0.875rem",
-                paddingBottom: "0.875rem",
-              }}
-            >
-              <Share size={20} />
-              share this →
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300"
-              style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                paddingTop: "0.75rem",
-                paddingBottom: "0.75rem",
-              }}
-            >
-              <RefreshCw size={18} />
-              play again tomorrow
-            </button>
-          </div>
+          {!(showTabs && tab === "today") && (
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 text-lg font-semibold tracking-wide text-black transition-all duration-300"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  paddingTop: "0.875rem",
+                  paddingBottom: "0.875rem",
+                }}
+              >
+                <Share size={20} />
+                share this →
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300"
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  paddingTop: "0.75rem",
+                  paddingBottom: "0.75rem",
+                }}
+              >
+                <RefreshCw size={18} />
+                play again tomorrow
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
