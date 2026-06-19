@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { ThemeData } from "../../lib/anthropic";
+import type { Mode } from "../../types/types";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
 import { ShareToggle } from "./ShareToggle";
@@ -8,13 +9,11 @@ import { SwitchModeDialog } from "./SwitchModeDialog";
 import { Timer } from "./Timer";
 import { WordChip, type ChipColor } from "./WordChip";
 
-type Mode = "game" | "freewrite";
-
 interface GameScreenProps {
   overlayOpacity: number;
   themeData: ThemeData | null;
   themeLoading: boolean;
-  onSubmit: (sentence: string, mode: Mode, isPublic: boolean) => void;
+  onSubmit: (sentence: string, mode: Mode, isPublic: boolean) => Promise<void>;
 }
 
 function formatDate(date: Date): string {
@@ -39,6 +38,8 @@ export default function GameScreen({
   const [isGameOver, setIsGameOver] = useState(false);
   const [pendingMode, setPendingMode] = useState<Mode | null>(null);
   const [shareToFeed, setShareToFeed] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
 
   const hasTyped = sentence.length > 0;
 
@@ -69,13 +70,20 @@ export default function GameScreen({
 
   const maxLength = mode === "game" ? 200 : 500;
 
-  const canSubmit = !!sentence.trim();
+  const canSubmit = !!sentence.trim() && !submitting;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
     // Free Write has no public posting concept — always private.
     const isPublic = mode === "game" ? shareToFeed : false;
-    onSubmit(sentence, mode, isPublic);
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      await onSubmit(sentence, mode, isPublic);
+    } catch {
+      setSubmitting(false);
+      setSubmitError(true);
+    }
   };
 
   const today = formatDate(new Date());
@@ -186,6 +194,11 @@ export default function GameScreen({
                   ? "that's my sentence →"
                   : "that's my free write →"}
               </button>
+              {submitError && (
+                <p className="text-center font-mono text-xs tracking-wide text-rose-300/90">
+                  Failed to submit — please try again
+                </p>
+              )}
               {mode === "game" && (
                 <ShareToggle checked={shareToFeed} onChange={setShareToFeed} />
               )}

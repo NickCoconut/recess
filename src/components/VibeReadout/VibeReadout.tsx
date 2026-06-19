@@ -1,21 +1,12 @@
-import { RefreshCw, Share } from "lucide-react";
+import { Bookmark, Check, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useAuth } from "../../hooks/useAuth";
 import { fetchVibeReadout, type ThemeData } from "../../lib/anthropic";
-import {
-  dummyFeed,
-  dummyPlayedToday,
-  type FeedItem,
-} from "../../lib/dummyFeed";
+import { saveSentenceToProfile } from "../../lib/sentences";
+import type { SubmitData } from "../../types/types";
+import { CheckToggle } from "../common/CheckToggle";
 import { FeedTab } from "./FeedTab";
-
-type Mode = "game" | "freewrite";
-
-export interface SubmitData {
-  sentence: string;
-  mode: Mode;
-  isPublic: boolean;
-}
 
 type Tab = "yours" | "today";
 
@@ -23,6 +14,7 @@ interface VibeReadoutProps {
   overlayOpacity: number;
   themeData: ThemeData | null;
   submitData: SubmitData;
+  sentenceId: string | null;
 }
 
 interface ParsedDiagnosis {
@@ -46,9 +38,12 @@ export default function VibeReadout({
   overlayOpacity,
   themeData,
   submitData,
+  sentenceId,
 }: VibeReadoutProps) {
   const { sentence, mode, isPublic } = submitData;
   const words = themeData?.words ?? [];
+
+  const { requireAuth } = useAuth();
 
   const [readout, setReadout] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,30 +52,38 @@ export default function VibeReadout({
   const showTabs = mode === "game";
   const [tab, setTab] = useState<Tab>("yours");
 
-  // Local feed seeded from dummy data. On a public Game-Mode submit we prepend
-  // the user's own sentence (no diagnosis — that stays private to the author).
-  const [feed] = useState<FeedItem[]>(() => {
-    // TODO: replace with Supabase insert — post the public sentence to the feed.
-    if (mode === "game" && isPublic) {
-      const mine: FeedItem = {
-        id: "you",
-        sentence,
-        likes: 0,
-        likedByMe: false,
-        location: "",
-        weather: "",
-        time: "just now",
-        isMine: true,
-      };
-      return [mine, ...dummyFeed];
-    }
-    return dummyFeed;
-  });
+  const [playedToday, setPlayedToday] = useState<number | null>(null);
 
-  // Every play counts toward the daily tally, even private ones that never
-  // surface in the visible feed.
-  // TODO: count private play server-side.
-  const playedToday = dummyPlayedToday + 1;
+  const [saveDiagnosis, setSaveDiagnosis] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+
+  const myFeedEntry =
+    mode === "game" && isPublic ? { id: sentenceId, sentence } : null;
+
+  const performSave = async () => {
+    if (!sentenceId) {
+      setSaveError(true);
+      return;
+    }
+    setSaving(true);
+    setSaveError(false);
+    const diagnosisToSave = saveDiagnosis ? (readout ?? null) : null;
+    const ok = await saveSentenceToProfile(sentenceId, diagnosisToSave);
+    setSaving(false);
+    if (ok) setSaved(true);
+    else setSaveError(true);
+  };
+
+  const handleSave = () => {
+    void requireAuth("save", () => {
+      void performSave();
+    });
+  };
+
+  const saveToggleLabel =
+    mode === "game" ? "Keep the diagnosis" : "Keep the reply";
 
   useEffect(() => {
     let cancelled = false;
@@ -171,16 +174,16 @@ export default function VibeReadout({
                   })}
                 </div>
 
-                {tab === "today" && (
+                {tab === "today" && !!playedToday && (
                   <p className="font-mono text-sm text-amber-200/85">
-                    {playedToday} played
+                    {playedToday} shared today
                   </p>
                 )}
               </div>
             )}
 
             {showTabs && tab === "today" ? (
-              <FeedTab items={feed} />
+              <FeedTab mine={myFeedEntry} onPlayedToday={setPlayedToday} />
             ) : (
               <div className="flex flex-col gap-6">
                 <p className="text-center font-mono text-xs tracking-[0.2em] text-white/40 uppercase">
@@ -252,18 +255,34 @@ export default function VibeReadout({
 
           {!(showTabs && tab === "today") && (
             <div className="flex flex-col gap-3">
+              <CheckToggle
+                checked={saveDiagnosis}
+                onChange={setSaveDiagnosis}
+                label={saveToggleLabel}
+              />
               <button
                 type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-white/90 text-lg font-semibold tracking-wide text-black transition-all duration-300"
+                onClick={handleSave}
+                disabled={loading || saving || saved}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-white/90 text-lg font-semibold tracking-wide text-black transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-70"
                 style={{
                   border: "1px solid rgba(255,255,255,0.15)",
                   paddingTop: "0.875rem",
                   paddingBottom: "0.875rem",
                 }}
               >
-                <Share size={20} />
-                share this →
+                {saved ? <Check size={22} /> : <Bookmark size={22} />}
+                {saved
+                  ? "saved \u2713"
+                  : saving
+                    ? "saving\u2026"
+                    : "save to profile"}
               </button>
+              {saveError && (
+                <p className="text-center font-mono text-xs tracking-wide text-rose-300/90">
+                  couldn&rsquo;t save — try again
+                </p>
+              )}
               <button
                 type="button"
                 className="flex w-full items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300"

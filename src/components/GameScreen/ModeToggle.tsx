@@ -1,4 +1,4 @@
-type Mode = "game" | "freewrite";
+import type { Mode } from "../../types/types";
 
 interface ModeToggleProps {
   mode: Mode;

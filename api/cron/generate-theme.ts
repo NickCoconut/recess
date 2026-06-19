@@ -117,7 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Verify this is a legitimate Vercel cron invocation
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ status: "error", error: "Unauthorized" });
   }
 
   try {

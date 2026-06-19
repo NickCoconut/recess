@@ -1,5 +1,7 @@
 import { CircleUserRound, Mail, Settings2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { AuthModal } from "../Auth/AuthModal";
 import { FeedbackModal } from "../Feedback/FeedbackModal";
 
 interface TopBarProps {
@@ -46,7 +48,9 @@ const sliderStyles = `
 export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { isPermanent } = useAuth();
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -123,9 +127,28 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
         )}
       </div>
 
-      <button type="button" className={iconButtonClass} aria-label="Account">
-        <CircleUserRound size={22} />
+      <button
+        type="button"
+        className={iconButtonClass}
+        aria-label="Account"
+        onClick={() => {
+          if (!isPermanent) setAuthOpen(true);
+        }}
+      >
+        <CircleUserRound
+          size={22}
+          className={isPermanent ? "text-amber-300" : undefined}
+          fill={isPermanent ? "currentColor" : "none"}
+        />
       </button>
+
+      {authOpen && (
+        <AuthModal
+          reason="account"
+          onClose={() => setAuthOpen(false)}
+          onSuccess={() => setAuthOpen(false)}
+        />
+      )}
     </div>
   );
 }

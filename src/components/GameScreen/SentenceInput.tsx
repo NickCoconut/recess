@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-type Mode = "game" | "freewrite";
+import type { Mode } from "../../types/types";
 
 const GAME_PLACEHOLDERS = [
   "say something. weird is fine.",

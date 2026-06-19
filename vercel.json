@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-theme",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-anon",
+      "schedule": "0 10 * * *"
     }
   ]
 }

@@ -8,10 +8,12 @@ const CACHE_KEY = "recess_theme_cache";
 type ThemeCache = {
   pacificDate: string;
   data: ThemeData;
+  themeId: string | null;
 };
 
 export function useTheme() {
   const [themeData, setThemeData] = useState<ThemeData | null>(null);
+  const [themeId, setThemeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function useTheme() {
           const cache: ThemeCache = JSON.parse(raw);
           if (cache.pacificDate === todayPT) {
             setThemeData(cache.data);
+            setThemeId(cache.themeId ?? null);
             setLoading(false);
             return;
           }
@@ -33,7 +36,7 @@ export function useTheme() {
         // Fetch the most recent theme from Supabase
         const { data, error } = await supabase
           .from("daily_themes")
-          .select("theme, words, date")
+          .select("id, theme, words, date")
           .order("date", { ascending: false })
           .limit(1)
           .maybeSingle(); // database might be empty
@@ -43,6 +46,7 @@ export function useTheme() {
             theme: data.theme,
             words: data.words as [string, string, string],
           };
+          const id = (data.id as string | null) ?? null;
 
           // Only cache if today's theme
           if (data.date === todayPT) {
@@ -51,11 +55,13 @@ export function useTheme() {
               JSON.stringify({
                 pacificDate: todayPT,
                 data: theme,
+                themeId: id,
               }),
             );
           }
 
           setThemeData(theme);
+          setThemeId(id);
         }
       } catch (err) {
         console.error("useTheme error:", err);
@@ -67,5 +73,5 @@ export function useTheme() {
     loadTheme();
   }, []);
 
-  return { themeData, loading };
+  return { themeData, themeId, loading };
 }
