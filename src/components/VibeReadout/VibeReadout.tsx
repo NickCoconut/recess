@@ -77,9 +77,13 @@ export default function VibeReadout({
   };
 
   const handleSave = () => {
-    void requireAuth("save", () => {
-      void performSave();
-    });
+    void requireAuth(
+      "save",
+      () => {
+        void performSave();
+      },
+      sentenceId,
+    );
   };
 
   const saveToggleLabel =
@@ -125,10 +129,10 @@ export default function VibeReadout({
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-4"
+      className="pointer-events-none flex min-h-screen items-center justify-center p-4"
       style={{ position: "relative", zIndex: 1 }}
     >
-      <div className="flex w-full max-w-[560px] flex-col gap-6">
+      <div className="pointer-events-auto flex w-full max-w-[560px] flex-col gap-6">
         <div
           className="flex w-full flex-col justify-between gap-6"
           style={{
@@ -273,10 +277,10 @@ export default function VibeReadout({
               >
                 {saved ? <Check size={22} /> : <Bookmark size={22} />}
                 {saved
-                  ? "saved \u2713"
+                  ? "Saved \u2713"
                   : saving
-                    ? "saving\u2026"
-                    : "save to profile"}
+                    ? "Saving\u2026"
+                    : "Save to profile"}
               </button>
               {saveError && (
                 <p className="text-center font-mono text-xs tracking-wide text-rose-300/90">
@@ -294,7 +298,7 @@ export default function VibeReadout({
                 }}
               >
                 <RefreshCw size={18} />
-                play again tomorrow
+                Play again tomorrow
               </button>
             </div>
           )}

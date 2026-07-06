@@ -89,6 +89,35 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
           </>
         )}
       </div>
+
+      <div
+        style={{
+          position: "absolute",
+          bottom: "1.25rem",
+          right: "2rem",
+          zIndex: 1,
+        }}
+      >
+        <p className="text-xs tracking-wide text-white/50">
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noopener"
+            className="cursor-pointer transition-colors duration-200 hover:text-white/80"
+          >
+            Terms
+          </a>
+          <span className="mx-1.5"> · </span>
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener"
+            className="cursor-pointer transition-colors duration-200 hover:text-white/80"
+          >
+            Privacy Policy
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

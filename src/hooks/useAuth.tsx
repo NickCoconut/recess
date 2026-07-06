@@ -19,7 +19,11 @@ interface AuthContextValue {
   isPermanent: boolean;
   loading: boolean;
   ensureSession: (forceNew?: boolean) => Promise<string>;
-  requireAuth: (reason: AuthReason, action?: () => void) => Promise<boolean>;
+  requireAuth: (
+    reason: AuthReason,
+    action?: () => void,
+    sentenceId?: string | null,
+  ) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -30,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalReason, setModalReason] = useState<AuthReason>("save");
+  const [modalSentenceId, setModalSentenceId] = useState<string | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -68,7 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const requireAuth = useCallback(
-    async (reason: AuthReason, action?: () => void): Promise<boolean> => {
+    async (
+      reason: AuthReason,
+      action?: () => void,
+      sentenceId?: string | null,
+    ): Promise<boolean> => {
       const { data } = await supabase.auth.getClaims();
       const permanent = data?.claims?.is_anonymous === false;
 
@@ -78,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       pendingAction.current = action ?? null;
       setModalReason(reason);
+      setModalSentenceId(sentenceId ?? null);
       setModalOpen(true);
       return false;
     },
@@ -88,9 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setModalOpen(false);
     const action = pendingAction.current;
     pendingAction.current = null;
-    // Continue the original Save/Like the user was attempting.
-    if (action) action();
-  }, []);
+    if (modalReason === "save" && action) action();
+  }, [modalReason]);
 
   const handleClose = useCallback(() => {
     setModalOpen(false);
@@ -113,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {modalOpen && (
         <AuthModal
           reason={modalReason}
+          sentenceId={modalSentenceId}
           onClose={handleClose}
           onSuccess={handleSuccess}
         />

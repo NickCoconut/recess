@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+import { getPacificDate } from "../src/lib/date";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -77,6 +80,90 @@ export function buildGameUserPrompt(
   return `Someone wrote this sentence in a daily creative writing game:\n\n"${sentence}"\n\n(Background only — today's theme was "${theme}" and the optional word prompts were ${(words ?? []).join(", ")}. It does NOT matter whether they used any of these. Never comment on whether they did.)\n\nRead the sentence they wrote and give them their vibe readout.`;
 }
 
+interface HistoryRow {
+  sentence: string;
+  diagnosis: string | null;
+  mode: string;
+  date: string;
+  daily_themes: { theme: string | null } | null;
+}
+
+function themeOf(row: HistoryRow): string | null {
+  return row.daily_themes?.theme ?? null;
+}
+
+function formatHistory(
+  rows: HistoryRow[],
+  currentSentence: string,
+  today: string,
+): string {
+  return rows
+    .filter((r) => !(r.date === today && r.sentence === currentSentence))
+    .map((r) => {
+      const theme = themeOf(r);
+      const tag =
+        r.mode === "game"
+          ? `[game${theme ? ` · ${theme}` : ""}]`
+          : "[free write]";
+      return `${tag} "${r.sentence}"${r.diagnosis ? ` → ${r.diagnosis}` : ""}`;
+    })
+    .join("\n");
+}
+
+// Gets recent user entries for pattern detection
+async function fetchHistoryText(
+  token: string | null,
+  currentSentence: string,
+): Promise<string> {
+  const url = process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!token || !url || !serviceKey) return "";
+
+  try {
+    const supabaseAdmin = createClient(url, serviceKey);
+
+    // Get user id from verified JWT to prevent data leaks
+    const {
+      data: { user },
+    } = await supabaseAdmin.auth.getUser(token);
+    const userId = user?.id;
+    if (!userId) return "";
+
+    const { data: history, error } = await supabaseAdmin
+      .from("sentences")
+      .select("sentence, diagnosis, mode, date, daily_themes(theme)")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(7)
+      .returns<HistoryRow[]>();
+
+    if (error || !history || history.length === 0) return "";
+    return formatHistory(history, currentSentence, getPacificDate());
+  } catch (err) {
+    console.error("Vibe history fetch failed:", err);
+    return "";
+  }
+}
+
+// Appends recent entries for subtle pattern awareness, tweak frequency by mode.
+export function buildMemoryBlock(
+  historyText: string,
+  mode: "game" | "freewrite",
+): string {
+  if (!historyText) return "";
+
+  const frequencyLine =
+    mode === "freewrite"
+      ? "This is their ongoing journal — memory is part of the point here, so you may reference a genuine recurring pattern a little more freely, while still keeping it sparing and earned."
+      : "Keep this light and demo-like: surface a pattern only rarely, when it's unmistakable.";
+
+  return `
+
+The user's recent entries (newest first), for SUBTLE pattern awareness only:
+${historyText}
+Use this sparingly. Only reference a pattern when something genuinely stands out (a recurring word, mood, or theme across multiple entries). When you do, keep it light and specific — "third spiral this week", "you keep landing on quietly" — never clinical, never surveillance-y ("on Tuesday you wrote..."), never an emotional diagnosis ("you seem sad lately"). ${frequencyLine} Most readouts should NOT reference history at all. If nothing stands out, ignore this entirely and respond as normal.`;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -93,8 +180,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "sentence and mode are required" });
   }
 
-  const systemPrompt =
+  const token =
+    req.headers.authorization?.replace(/^Bearer\s+/i, "").trim() ?? null;
+  const historyText = await fetchHistoryText(token, sentence);
+
+  const basePrompt =
     mode === "game" ? GAME_SYSTEM_PROMPT : FREEWRITE_SYSTEM_PROMPT;
+  const systemPrompt = basePrompt + buildMemoryBlock(historyText, mode);
 
   const userPrompt =
     mode === "game"
@@ -103,7 +195,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-sonnet-5",
       max_tokens: 300,
       thinking: { type: "disabled" },
       output_config: { effort: "low" },

@@ -1,6 +1,14 @@
-import { CircleUserRound, Mail, Settings2 } from "lucide-react";
+import {
+  CircleUserRound,
+  LogOut,
+  Mail,
+  Settings2,
+  Settings,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { supabase } from "../../lib/supabase";
 import { AuthModal } from "../Auth/AuthModal";
 import { FeedbackModal } from "../Feedback/FeedbackModal";
 
@@ -11,6 +19,9 @@ interface TopBarProps {
 
 const iconButtonClass =
   "flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors duration-200 hover:bg-white/10 hover:text-white";
+
+// Settings menu item is planned for V2; hidden for now.
+const SHOW_ACCOUNT_SETTINGS = false;
 
 const sliderStyles = `
 .opacity-slider {
@@ -49,12 +60,13 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
   const { isPermanent } = useAuth();
 
   useEffect(() => {
     if (!settingsOpen) return;
-
     const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
@@ -63,10 +75,23 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
         setSettingsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        accountRef.current &&
+        !accountRef.current.contains(event.target as Node)
+      ) {
+        setAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountOpen]);
 
   return (
     <div
@@ -127,20 +152,70 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
         )}
       </div>
 
-      <button
-        type="button"
-        className={iconButtonClass}
-        aria-label="Account"
-        onClick={() => {
-          if (!isPermanent) setAuthOpen(true);
-        }}
-      >
-        <CircleUserRound
-          size={22}
-          className={isPermanent ? "text-amber-300" : undefined}
-          fill={isPermanent ? "currentColor" : "none"}
-        />
-      </button>
+      <div ref={accountRef} className="relative">
+        <button
+          type="button"
+          className={iconButtonClass}
+          aria-label="Account"
+          onClick={() => {
+            if (isPermanent) setAccountOpen((open) => !open);
+            else setAuthOpen(true);
+          }}
+        >
+          <CircleUserRound
+            size={22}
+            className={isPermanent ? "text-amber-300" : undefined}
+            fill="none"
+          />
+        </button>
+
+        {accountOpen && (
+          <div
+            className="absolute top-12 right-0 flex w-44 flex-col overflow-hidden"
+            style={{
+              background: `rgba(0,0,0,${opacity})`,
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "16px",
+            }}
+          >
+            {/* TODO: navigate to profile */}
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+              style={{ padding: "0.75rem 1rem" }}
+              onClick={() => setAccountOpen(false)}
+            >
+              <UserRound size={15} />
+              Profile
+            </button>
+            {SHOW_ACCOUNT_SETTINGS && (
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+                style={{ padding: "0.75rem 1rem" }}
+                onClick={() => setAccountOpen(false)}
+              >
+                <Settings size={15} />
+                Settings
+              </button>
+            )}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }} />
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2.5 text-sm text-white/60 transition-colors duration-150 hover:bg-white/10 hover:text-rose-300"
+              style={{ padding: "0.85rem 1rem" }}
+              onClick={async () => {
+                setAccountOpen(false);
+                await supabase.auth.signOut();
+              }}
+            >
+              <LogOut size={15} />
+              Sign out
+            </button>
+          </div>
+        )}
+      </div>
 
       {authOpen && (
         <AuthModal

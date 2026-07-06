@@ -91,10 +91,10 @@ export default function GameScreen({
   return (
     <>
       <div
-        className="flex min-h-screen items-center justify-center p-4"
+        className="pointer-events-none flex min-h-screen items-center justify-center p-4"
         style={{ position: "relative", zIndex: 1 }}
       >
-        <div className="flex w-full max-w-[560px] flex-col gap-6">
+        <div className="pointer-events-auto flex w-full max-w-[560px] flex-col gap-6">
           {/* Header row — aligns with card edges */}
           <div className="flex items-end justify-between px-1">
             <div className="flex flex-col gap-0.5">
