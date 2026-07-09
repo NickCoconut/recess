@@ -98,8 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setModalOpen(false);
     const action = pendingAction.current;
     pendingAction.current = null;
-    if (modalReason === "save" && action) action();
-  }, [modalReason]);
+    action?.();
+  }, []);
 
   const handleClose = useCallback(() => {
     setModalOpen(false);

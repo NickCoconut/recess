@@ -15,6 +15,7 @@ interface VibeReadoutProps {
   themeData: ThemeData | null;
   submitData: SubmitData;
   sentenceId: string | null;
+  onPlayAgain: () => void;
 }
 
 interface ParsedDiagnosis {
@@ -39,6 +40,7 @@ export default function VibeReadout({
   themeData,
   submitData,
   sentenceId,
+  onPlayAgain,
 }: VibeReadoutProps) {
   const { sentence, mode, isPublic } = submitData;
   const words = themeData?.words ?? [];
@@ -187,7 +189,11 @@ export default function VibeReadout({
             )}
 
             {showTabs && tab === "today" ? (
-              <FeedTab mine={myFeedEntry} onPlayedToday={setPlayedToday} />
+              <FeedTab
+                mine={myFeedEntry}
+                sentenceId={sentenceId}
+                onPlayedToday={setPlayedToday}
+              />
             ) : (
               <div className="flex flex-col gap-6">
                 <p className="text-center font-mono text-xs tracking-[0.2em] text-white/40 uppercase">
@@ -276,20 +282,17 @@ export default function VibeReadout({
                 }}
               >
                 {saved ? <Check size={22} /> : <Bookmark size={22} />}
-                {saved
-                  ? "Saved \u2713"
-                  : saving
-                    ? "Saving\u2026"
-                    : "Save to profile"}
+                {saved ? "Saved" : saving ? "Saving..." : "Save to profile"}
               </button>
               {saveError && (
                 <p className="text-center font-mono text-xs tracking-wide text-rose-300/90">
-                  couldn&rsquo;t save — try again
+                  Couldn't save — try again
                 </p>
               )}
               <button
                 type="button"
-                className="flex w-full items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300"
+                onClick={onPlayAgain}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300 hover:text-white"
                 style={{
                   background: "rgba(255,255,255,0.1)",
                   border: "1px solid rgba(255,255,255,0.08)",

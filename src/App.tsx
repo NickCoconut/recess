@@ -53,6 +53,12 @@ function App() {
     if (row.id) setSentenceId(row.id);
   };
 
+  const handlePlayAgain = () => {
+    setScreen("game");
+    setSubmitData(null);
+    setSentenceId(null);
+  };
+
   const handleSubmit = async (
     sentence: string,
     mode: Mode,
@@ -71,7 +77,12 @@ function App() {
     <>
       <WeatherBackground weather={weather} />
 
-      <TopBar opacity={overlayOpacity} onOpacityChange={setUserOpacity} />
+      <TopBar
+        opacity={overlayOpacity}
+        onOpacityChange={setUserOpacity}
+        onSignOut={handlePlayAgain}
+        sentenceId={sentenceId}
+      />
 
       {screen === "game" ? (
         <GameScreen
@@ -87,6 +98,7 @@ function App() {
             themeData={themeData}
             submitData={submitData}
             sentenceId={sentenceId}
+            onPlayAgain={handlePlayAgain}
           />
         )
       )}

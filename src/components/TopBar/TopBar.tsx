@@ -15,6 +15,8 @@ import { FeedbackModal } from "../Feedback/FeedbackModal";
 interface TopBarProps {
   opacity: number;
   onOpacityChange: (value: number) => void;
+  onSignOut?: () => void;
+  sentenceId?: string | null;
 }
 
 const iconButtonClass =
@@ -56,7 +58,12 @@ const sliderStyles = `
 }
 `;
 
-export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
+export function TopBar({
+  opacity,
+  onOpacityChange,
+  onSignOut,
+  sentenceId,
+}: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -208,6 +215,7 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
               onClick={async () => {
                 setAccountOpen(false);
                 await supabase.auth.signOut();
+                onSignOut?.();
               }}
             >
               <LogOut size={15} />
@@ -220,6 +228,7 @@ export function TopBar({ opacity, onOpacityChange }: TopBarProps) {
       {authOpen && (
         <AuthModal
           reason="account"
+          sentenceId={sentenceId}
           onClose={() => setAuthOpen(false)}
           onSuccess={() => setAuthOpen(false)}
         />

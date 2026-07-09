@@ -27,35 +27,46 @@ interface MySubmission {
 
 interface FeedTabProps {
   mine?: MySubmission | null;
+  sentenceId?: string | null;
   onPlayedToday?: (count: number) => void;
 }
 
 interface FeedRowProps {
   item: FeedItem;
+  sentenceId?: string | null;
 }
 
-function FeedRow({ item }: FeedRowProps) {
-  const { userId, requireAuth } = useAuth();
+function FeedRow({ item, sentenceId }: FeedRowProps) {
+  const { requireAuth, ensureSession } = useAuth();
 
   const [liked, setLiked] = useState(item.likedByMe);
   const [likes, setLikes] = useState(item.likes);
 
-  const handleLike = async () => {
-    const authed = await requireAuth("like");
-    if (!authed) return;
-
+  const performLike = async () => {
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikes((n) => (nextLiked ? n + 1 : n - 1));
 
+    // Get current session user id at click time
+    const currentUserId = await ensureSession();
     const ok = nextLiked
-      ? await likeSentence(item.id, userId!)
-      : await unlikeSentence(item.id, userId!);
+      ? await likeSentence(item.id, currentUserId)
+      : await unlikeSentence(item.id, currentUserId);
 
     if (!ok) {
       setLiked(!nextLiked);
       setLikes((n) => (nextLiked ? n - 1 : n + 1));
     }
+  };
+
+  const handleLike = () => {
+    void requireAuth(
+      "like",
+      () => {
+        void performLike();
+      },
+      sentenceId,
+    );
   };
 
   const ambient = item.isMine
@@ -112,7 +123,7 @@ function FeedRow({ item }: FeedRowProps) {
   );
 }
 
-export function FeedTab({ mine, onPlayedToday }: FeedTabProps) {
+export function FeedTab({ mine, sentenceId, onPlayedToday }: FeedTabProps) {
   const { userId } = useAuth();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +188,9 @@ export function FeedTab({ mine, onPlayedToday }: FeedTabProps) {
             Be the first to share something today
           </p>
         ) : (
-          display.map((item) => <FeedRow key={item.id} item={item} />)
+          display.map((item) => (
+            <FeedRow key={item.id} item={item} sentenceId={sentenceId} />
+          ))
         )}
       </div>
     </div>
