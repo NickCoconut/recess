@@ -47,7 +47,8 @@ export async function fetchTodayFeed(
   const { count: playedCount } = await supabase
     .from("sentences")
     .select("*", { count: "exact", head: true })
-    .eq("date", today);
+    .eq("date", today)
+    .eq("is_public", true);
 
   const playedToday = playedCount ?? 0;
 

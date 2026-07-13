@@ -180,7 +180,7 @@ export default function VibeReadout({
                   })}
                 </div>
 
-                {tab === "today" && !!playedToday && (
+                {tab === "today" && playedToday !== null && (
                   <p className="font-mono text-sm text-amber-200/85">
                     {playedToday} shared today
                   </p>

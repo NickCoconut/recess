@@ -51,14 +51,14 @@ export function Timer({ started, mode, onExpire }: TimerProps) {
 
   const colorClass =
     timeLeft > 30
-      ? "text-white/40"
+      ? "text-white/70"
       : timeLeft > 15
         ? "text-amber-400"
         : "text-red-400";
 
   return (
     <span
-      className={`font-mono text-sm tabular-nums transition-colors duration-500 ${colorClass}`}
+      className={`font-mono text-lg tabular-nums transition-colors duration-500 ${colorClass}`}
     >
       {formatTime(timeLeft)}
     </span>

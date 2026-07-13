@@ -14,7 +14,9 @@ interface SentenceInputProps {
   value: string;
   onChange: (value: string) => void;
   onFocus: () => void;
+  onSubmitShortcut?: () => void;
   isGameOver: boolean;
+  blocked?: boolean;
   maxLength: number;
 }
 
@@ -30,7 +32,9 @@ export function SentenceInput({
   value,
   onChange,
   onFocus,
+  onSubmitShortcut,
   isGameOver,
+  blocked,
   maxLength,
 }: SentenceInputProps) {
   const gamePlaceholder = useRef(
@@ -45,7 +49,13 @@ export function SentenceInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
-        disabled={mode === "game" && isGameOver}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            onSubmitShortcut?.();
+          }
+        }}
+        disabled={(mode === "game" && isGameOver) || blocked}
         placeholder={placeholder}
         maxLength={maxLength}
         rows={mode === "game" ? 6 : 10}
@@ -58,7 +68,15 @@ export function SentenceInput({
             className="absolute inset-x-0 text-center font-mono text-sm tracking-wide"
             style={{ color: "#fcd34d" }}
           >
-            time's up. this was always it.
+            Time's up. This was always it.
+          </p>
+        )}
+        {!(mode === "game" && isGameOver) && blocked && (
+          <p
+            className="absolute inset-x-0 text-center font-mono text-sm tracking-wide"
+            style={{ color: "#fcd34d" }}
+          >
+            You already played today's recess. Come back tomorrow.
           </p>
         )}
         {value.length > 0 && (

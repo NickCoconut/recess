@@ -25,7 +25,6 @@ function App() {
   const overlayOpacity = userOpacity ?? weather.config.overlayOpacity;
 
   const persistSentence = async (
-    userId: string,
     sentence: string,
     mode: Mode,
     isPublic: boolean,
@@ -40,14 +39,14 @@ function App() {
       isPublic,
     };
 
-    let row = await insertSentence({ ...params, userId });
+    let row = await insertSentence(params);
 
     // The stored token can reference an anonymous user the cleanup cron already
     // reaped; the user_id foreign key then fails (23503). Recover transparently
     // by minting a fresh anonymous user and retrying the insert once.
     if (!row.id && row.errorCode === "23503") {
-      const freshId = await ensureSession(true);
-      row = await insertSentence({ ...params, userId: freshId });
+      await ensureSession(true);
+      row = await insertSentence(params);
     }
 
     if (row.id) setSentenceId(row.id);
@@ -65,12 +64,12 @@ function App() {
     isPublic: boolean,
   ) => {
     if (!sentence.trim()) return;
-    const userId = await ensureSession();
+    await ensureSession();
 
     setSentenceId(null);
     setSubmitData({ sentence, mode, isPublic });
     setScreen("readout");
-    void persistSentence(userId, sentence, mode, isPublic);
+    void persistSentence(sentence, mode, isPublic);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import type { ThemeData } from "../../lib/anthropic";
+import { getPacificDate } from "../../lib/date";
 import type { Mode } from "../../types/types";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
@@ -26,6 +27,8 @@ function formatDate(date: Date): string {
 
 const CHIP_COLORS: ChipColor[] = ["amber", "teal", "coral"];
 
+const DAILY_SUBMISSION_KEY = "recess:lastSubmissionDate";
+
 export default function GameScreen({
   overlayOpacity,
   themeData,
@@ -40,6 +43,9 @@ export default function GameScreen({
   const [shareToFeed, setShareToFeed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
+  const [alreadyPlayedToday, setAlreadyPlayedToday] = useState(
+    () => localStorage.getItem(DAILY_SUBMISSION_KEY) === getPacificDate(),
+  );
 
   const hasTyped = sentence.length > 0;
 
@@ -70,7 +76,9 @@ export default function GameScreen({
 
   const maxLength = mode === "game" ? 200 : 500;
 
-  const canSubmit = !!sentence.trim() && !submitting;
+  const blockedByDailyLimit = alreadyPlayedToday;
+
+  const canSubmit = !!sentence.trim() && !submitting && !blockedByDailyLimit;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -80,6 +88,8 @@ export default function GameScreen({
     setSubmitError(false);
     try {
       await onSubmit(sentence, mode, isPublic);
+      localStorage.setItem(DAILY_SUBMISSION_KEY, getPacificDate());
+      setAlreadyPlayedToday(true);
     } catch {
       setSubmitting(false);
       setSubmitError(true);
@@ -98,10 +108,10 @@ export default function GameScreen({
           {/* Header row — aligns with card edges */}
           <div className="flex items-end justify-between px-1">
             <div className="flex flex-col gap-0.5">
-              <p className="text-xl font-semibold tracking-[0.18em] text-white/70 uppercase">
+              <p className="text-2xl font-semibold tracking-[0.18em] text-white/90 uppercase">
                 Recess
               </p>
-              <p className="text-sm tracking-widest text-white/40 uppercase">
+              <p className="text-base tracking-widest text-white/60 uppercase">
                 {today}
               </p>
             </div>
@@ -174,7 +184,9 @@ export default function GameScreen({
                 value={sentence}
                 onChange={setSentence}
                 onFocus={startTimer}
+                onSubmitShortcut={handleSubmit}
                 isGameOver={isGameOver}
+                blocked={blockedByDailyLimit}
                 maxLength={maxLength}
               />
             </div>
@@ -190,16 +202,18 @@ export default function GameScreen({
                     : "cursor-not-allowed bg-white/10 text-white/25"
                 } `}
               >
-                {mode === "game"
-                  ? "that's my sentence →"
-                  : "that's my free write →"}
+                {blockedByDailyLimit
+                  ? "See you tomorrow"
+                  : mode === "game"
+                    ? "That's my sentence →"
+                    : "That's my free write →"}
               </button>
               {submitError && (
                 <p className="text-center font-mono text-xs tracking-wide text-rose-300/90">
                   Failed to submit — please try again
                 </p>
               )}
-              {mode === "game" && (
+              {mode === "game" && !blockedByDailyLimit && (
                 <ShareToggle checked={shareToFeed} onChange={setShareToFeed} />
               )}
             </div>

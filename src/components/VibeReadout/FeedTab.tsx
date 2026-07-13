@@ -1,5 +1,5 @@
-import { Heart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Funnel, Heart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -123,10 +123,35 @@ function FeedRow({ item, sentenceId }: FeedRowProps) {
   );
 }
 
+type SortBy = "recent" | "liked";
+
+const SORT_OPTIONS: { key: SortBy; label: string }[] = [
+  { key: "recent", label: "Recent" },
+  { key: "liked", label: "Most liked" },
+];
+
 export function FeedTab({ mine, sentenceId, onPlayedToday }: FeedTabProps) {
   const { userId } = useAuth();
   const [items, setItems] = useState<FeedItem[]>([]);
+  const [playedToday, setPlayedToday] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(event.target as Node)
+      ) {
+        setSortMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [sortMenuOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,7 +160,7 @@ export function FeedTab({ mine, sentenceId, onPlayedToday }: FeedTabProps) {
       const res = await fetchTodayFeed(userId);
       if (cancelled) return;
       setItems(res.items);
-      onPlayedToday?.(res.playedToday);
+      setPlayedToday(res.playedToday);
       setLoading(false);
     }
 
@@ -143,13 +168,18 @@ export function FeedTab({ mine, sentenceId, onPlayedToday }: FeedTabProps) {
     return () => {
       cancelled = true;
     };
-  }, [userId, onPlayedToday]);
+  }, [userId]);
+
+  // `items` arrives ordered most-recent-first from the query; only "liked"
+  // needs a client-side re-sort.
+  const sorted =
+    sortBy === "liked" ? [...items].sort((a, b) => b.likes - a.likes) : items;
 
   // Show user's entry at the top, real if present, else optimistic placeholder.
-  let display = items;
+  let display = sorted;
   if (mine) {
-    const realRow = mine.id ? items.find((it) => it.id === mine.id) : null;
-    const rest = realRow ? items.filter((it) => it.id !== mine.id) : items;
+    const realRow = mine.id ? sorted.find((it) => it.id === mine.id) : null;
+    const rest = realRow ? sorted.filter((it) => it.id !== mine.id) : sorted;
     const topItem: FeedItem = realRow ?? {
       id: mine.id ?? "you",
       sentence: mine.sentence,
@@ -163,8 +193,59 @@ export function FeedTab({ mine, sentenceId, onPlayedToday }: FeedTabProps) {
     display = [topItem, ...rest];
   }
 
+  const displayedPlayedToday = playedToday + (mine && !mine.id ? 1 : 0);
+
+  useEffect(() => {
+    onPlayedToday?.(displayedPlayedToday);
+  }, [displayedPlayedToday, onPlayedToday]);
+
   return (
     <div className="flex flex-col gap-3">
+      <div ref={sortMenuRef} className="relative self-end">
+        <button
+          type="button"
+          aria-label="Sort feed"
+          aria-expanded={sortMenuOpen}
+          onClick={() => setSortMenuOpen((open) => !open)}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white/60 transition-colors duration-200 hover:bg-white/10 hover:text-white"
+        >
+          <Funnel size={18} />
+        </button>
+
+        {sortMenuOpen && (
+          <div
+            className="absolute top-9 left-0 z-10 flex w-40 origin-top-left flex-col overflow-hidden"
+            style={{
+              background: "rgba(15,15,20,0.9)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "12px",
+            }}
+          >
+            {SORT_OPTIONS.map(({ key, label }) => {
+              const active = sortBy === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setSortBy(key);
+                    setSortMenuOpen(false);
+                  }}
+                  className={`flex cursor-pointer items-center justify-between gap-2 text-sm transition-colors duration-150 hover:bg-white/10 ${
+                    active ? "text-white" : "text-white/65"
+                  }`}
+                  style={{ padding: "0.6rem 0.85rem" }}
+                >
+                  {label}
+                  {active && <Check size={14} />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div
         className="overflow-y-auto rounded-xl"
         style={{
