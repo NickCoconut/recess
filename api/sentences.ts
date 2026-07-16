@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
 
 import { getPacificDate } from "../src/lib/helper";
+import type { Database } from "../src/types/database.types";
 
 interface ModerationResult {
   flagged: boolean;
@@ -51,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Server misconfigured" });
   }
 
-  const supabaseAdmin = createClient(url, serviceKey);
+  const supabaseAdmin = createClient<Database>(url, serviceKey);
 
   const {
     data: { user },
@@ -91,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       user_id: user.id,
     })
     .select("id")
-    .single<{ id: string }>();
+    .single();
 
   if (error || !data) {
     console.error("Failed to insert sentence:", error);

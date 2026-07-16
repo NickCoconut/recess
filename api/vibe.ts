@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 import { getPacificDate } from "../src/lib/helper";
+import type { Database, Tables } from "../src/types/database.types";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -80,13 +81,12 @@ export function buildGameUserPrompt(
   return `Someone wrote this sentence in a daily creative writing game:\n\n"${sentence}"\n\n(Background only — today's theme was "${theme}" and the optional word prompts were ${(words ?? []).join(", ")}. It does NOT matter whether they used any of these. Only let the theme or words shape your reading if the sentence is actually about that world — if it's unrelated, ignore them completely and read the sentence on its own terms. Never comment on whether they used them.)\n\nRead the sentence they wrote and give them their vibe readout.`;
 }
 
-interface HistoryRow {
-  sentence: string;
-  diagnosis: string | null;
-  mode: string;
-  date: string;
-  daily_themes: { theme: string | null } | null;
-}
+type HistoryRow = Pick<
+  Tables<"sentences">,
+  "sentence" | "diagnosis" | "mode" | "date"
+> & {
+  daily_themes: Pick<Tables<"daily_themes">, "theme"> | null;
+};
 
 function themeOf(row: HistoryRow): string | null {
   return row.daily_themes?.theme ?? null;
@@ -120,7 +120,7 @@ async function fetchHistoryText(
   if (!token || !url || !serviceKey) return "";
 
   try {
-    const supabaseAdmin = createClient(url, serviceKey);
+    const supabaseAdmin = createClient<Database>(url, serviceKey);
 
     // Get user id from verified JWT to prevent data leaks
     const {

@@ -11,10 +11,6 @@ export interface ProfileSentence {
   createdAt: string;
 }
 
-type SentenceRow = Omit<ProfileSentence, "createdAt"> & {
-  created_at: ProfileSentence["createdAt"];
-};
-
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -39,8 +35,7 @@ export async function fetchMonthSentences(
     .eq("saved_to_profile", true)
     .gte("date", start)
     .lte("date", end)
-    .order("created_at", { ascending: true })
-    .returns<SentenceRow[]>();
+    .order("created_at", { ascending: true });
 
   if (error || !data) {
     if (error) console.error("Failed to load profile sentences:", error);
@@ -50,7 +45,7 @@ export async function fetchMonthSentences(
   return data.map((r) => ({
     id: r.id,
     sentence: r.sentence,
-    mode: r.mode,
+    mode: r.mode as Mode,
     date: r.date,
     diagnosis: r.diagnosis,
     createdAt: r.created_at,
@@ -102,8 +97,7 @@ export async function fetchStreaks(
     .from("sentences")
     .select("date")
     .eq("user_id", userId)
-    .eq("saved_to_profile", true)
-    .returns<{ date: string }[]>();
+    .eq("saved_to_profile", true);
 
   if (error || !data) {
     if (error) console.error("Failed to load streak data:", error);

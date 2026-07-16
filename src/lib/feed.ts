@@ -25,20 +25,6 @@ function formatTime(iso: string): string {
   });
 }
 
-interface SentenceRow {
-  id: string;
-  sentence: string;
-  weather: string | null;
-  location: string | null;
-  created_at: string;
-  user_id: string;
-}
-
-interface LikeRow {
-  sentence_id: string;
-  user_id: string;
-}
-
 export async function fetchTodayFeed(
   currentUserId: string | null,
 ): Promise<FeedResult> {
@@ -58,8 +44,7 @@ export async function fetchTodayFeed(
     .eq("date", today)
     .eq("is_public", true)
     .order("created_at", { ascending: false })
-    .limit(50)
-    .returns<SentenceRow[]>();
+    .limit(50);
 
   if (error || !rows || rows.length === 0) {
     if (error) console.error("Failed to load feed:", error);
@@ -71,8 +56,7 @@ export async function fetchTodayFeed(
   const { data: likeRows } = await supabase
     .from("likes")
     .select("sentence_id, user_id")
-    .in("sentence_id", ids)
-    .returns<LikeRow[]>();
+    .in("sentence_id", ids);
 
   const likeCounts = new Map<string, number>();
   const likedByMe = new Set<string>();

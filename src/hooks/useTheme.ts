@@ -46,7 +46,7 @@ export function useTheme() {
             theme: data.theme,
             words: data.words as [string, string, string],
           };
-          const id = (data.id as string | null) ?? null;
+          const id = data.id;
 
           // Only cache if today's theme
           if (data.date === todayPT) {
