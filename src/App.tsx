@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { useState } from "react";
 
 import GameScreen from "./components/GameScreen/GameScreen";
@@ -81,6 +82,7 @@ function App() {
 
   return (
     <>
+      <Analytics />
       <WeatherBackground weather={weather} />
 
       <TopBar
