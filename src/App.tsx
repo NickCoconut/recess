@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import GameScreen from "./components/GameScreen/GameScreen";
+import ProfileView from "./components/Profile/ProfileView";
 import { WeatherBackground } from "./components/WeatherBackground/WeatherBackground";
 import { TopBar } from "./components/TopBar/TopBar";
 import VibeReadout from "./components/VibeReadout/VibeReadout";
@@ -10,15 +11,19 @@ import { useWeather } from "./hooks/useWeather";
 import { insertSentence } from "./lib/sentences";
 import type { Mode, SubmitData } from "./types/types";
 
-type Screen = "game" | "readout";
+type Screen = "game" | "readout" | "profile";
 
 function App() {
   const [screen, setScreen] = useState<Screen>("game");
+  const [screenBeforeProfile, setScreenBeforeProfile] = useState<
+    Exclude<Screen, "profile">
+  >("game");
   const [submitData, setSubmitData] = useState<SubmitData | null>(null);
   const [userOpacity, setUserOpacity] = useState<number | null>(null);
   const [sentenceId, setSentenceId] = useState<string | null>(null);
+  const [savedToProfile, setSavedToProfile] = useState(false);
 
-  const { ensureSession } = useAuth();
+  const { ensureSession, userId } = useAuth();
   const { weather } = useWeather();
   const { themeData, themeId, loading: themeLoading } = useTheme();
 
@@ -56,6 +61,7 @@ function App() {
     setScreen("game");
     setSubmitData(null);
     setSentenceId(null);
+    setSavedToProfile(false);
   };
 
   const handleSubmit = async (
@@ -67,6 +73,7 @@ function App() {
     await ensureSession();
 
     setSentenceId(null);
+    setSavedToProfile(false);
     setSubmitData({ sentence, mode, isPublic });
     setScreen("readout");
     void persistSentence(sentence, mode, isPublic);
@@ -80,26 +87,44 @@ function App() {
         opacity={overlayOpacity}
         onOpacityChange={setUserOpacity}
         onSignOut={handlePlayAgain}
+        onProfileClick={() => {
+          if (screen !== "profile") {
+            setScreenBeforeProfile(screen);
+          }
+          setScreen("profile");
+        }}
         sentenceId={sentenceId}
       />
 
-      {screen === "game" ? (
+      {screen === "game" && (
         <GameScreen
           overlayOpacity={overlayOpacity}
           themeData={themeData}
           themeLoading={themeLoading}
           onSubmit={handleSubmit}
         />
-      ) : (
-        submitData && (
+      )}
+
+      {submitData && (
+        <div style={{ display: screen === "readout" ? "contents" : "none" }}>
           <VibeReadout
             overlayOpacity={overlayOpacity}
             themeData={themeData}
             submitData={submitData}
             sentenceId={sentenceId}
+            saved={savedToProfile}
+            onSaved={() => setSavedToProfile(true)}
             onPlayAgain={handlePlayAgain}
           />
-        )
+        </div>
+      )}
+
+      {screen === "profile" && (
+        <ProfileView
+          overlayOpacity={overlayOpacity}
+          userId={userId}
+          onClose={() => setScreen(screenBeforeProfile)}
+        />
       )}
     </>
   );

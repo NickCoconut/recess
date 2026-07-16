@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { ThemeData } from "../../lib/anthropic";
-import { getPacificDate } from "../../lib/date";
+import { getPacificDate } from "../../lib/helper";
 import type { Mode } from "../../types/types";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";

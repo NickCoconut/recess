@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
 import { fetchVibeReadout, type ThemeData } from "../../lib/anthropic";
+import { parseDiagnosis } from "../../lib/helper";
 import { saveSentenceToProfile } from "../../lib/sentences";
 import type { SubmitData } from "../../types/types";
 import { CheckToggle } from "../common/CheckToggle";
+import { Tooltip } from "../common/Tooltip";
 import { FeedTab } from "./FeedTab";
 
 type Tab = "yours" | "today";
@@ -15,19 +17,9 @@ interface VibeReadoutProps {
   themeData: ThemeData | null;
   submitData: SubmitData;
   sentenceId: string | null;
+  saved: boolean;
+  onSaved: () => void;
   onPlayAgain: () => void;
-}
-
-interface ParsedDiagnosis {
-  label: string;
-  observation: string;
-}
-
-function parseDiagnosis(readout: string): ParsedDiagnosis | null {
-  // Expects "Diagnosis: label · observation"
-  const match = readout.match(/^Diagnosis:\s*(.+?)\s*[·•]\s*(.+)$/i);
-  if (!match) return null;
-  return { label: match[1].trim(), observation: match[2].trim() };
 }
 
 function isWordUsed(word: string, sentence: string): boolean {
@@ -40,6 +32,8 @@ export default function VibeReadout({
   themeData,
   submitData,
   sentenceId,
+  saved,
+  onSaved,
   onPlayAgain,
 }: VibeReadoutProps) {
   const { sentence, mode, isPublic } = submitData;
@@ -58,7 +52,6 @@ export default function VibeReadout({
 
   const [saveDiagnosis, setSaveDiagnosis] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
 
   const myFeedEntry =
@@ -74,7 +67,7 @@ export default function VibeReadout({
     const diagnosisToSave = saveDiagnosis ? (readout ?? null) : null;
     const ok = await saveSentenceToProfile(sentenceId, diagnosisToSave);
     setSaving(false);
-    if (ok) setSaved(true);
+    if (ok) onSaved();
     else setSaveError(true);
   };
 
@@ -200,9 +193,19 @@ export default function VibeReadout({
                   your sentence
                 </p>
 
-                <p className="text-center font-heading text-2xl leading-snug font-light text-white">
-                  &ldquo;{sentence}&rdquo;
-                </p>
+                <Tooltip content={sentence}>
+                  <p
+                    className="overflow-hidden text-center font-heading text-2xl leading-snug font-light text-white"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: "vertical",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {sentence}
+                  </p>
+                </Tooltip>
 
                 <div className="flex flex-col gap-3">
                   <div

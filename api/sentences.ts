@@ -2,11 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
 
-import { getPacificDate } from "../src/lib/date";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { getPacificDate } from "../src/lib/helper";
 
 interface ModerationResult {
   flagged: boolean;
@@ -15,6 +11,10 @@ interface ModerationResult {
 
 async function moderate(sentence: string): Promise<ModerationResult> {
   try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const result = await openai.moderations.create({
       input: sentence,
     });

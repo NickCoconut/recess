@@ -16,6 +16,7 @@ interface TopBarProps {
   opacity: number;
   onOpacityChange: (value: number) => void;
   onSignOut?: () => void;
+  onProfileClick?: () => void;
   sentenceId?: string | null;
 }
 
@@ -62,6 +63,7 @@ export function TopBar({
   opacity,
   onOpacityChange,
   onSignOut,
+  onProfileClick,
   sentenceId,
 }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -186,12 +188,14 @@ export function TopBar({
               borderRadius: "16px",
             }}
           >
-            {/* TODO: navigate to profile */}
             <button
               type="button"
               className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
               style={{ padding: "0.75rem 1rem" }}
-              onClick={() => setAccountOpen(false)}
+              onClick={() => {
+                setAccountOpen(false);
+                onProfileClick?.();
+              }}
             >
               <UserRound size={15} />
               Profile

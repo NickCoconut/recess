@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { getPacificDate } from "../lib/date";
+import { getPacificDate } from "../lib/helper";
 import type { ThemeData } from "../lib/anthropic";
 
 const CACHE_KEY = "recess_theme_cache";

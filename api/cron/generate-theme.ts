@@ -37,17 +37,20 @@ const THEME_DOMAINS = [
   "self-awareness and everyday quirks — procrastination, overthinking, little habits nobody admits",
 ];
 
-export function buildThemeUserPrompt(date: string) {
+export function buildThemeUserPrompt(date: string, recentThemes: string[] = []) {
   const dayNum = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
   const domain =
     THEME_DOMAINS[
       ((dayNum % THEME_DOMAINS.length) + THEME_DOMAINS.length) %
         THEME_DOMAINS.length
     ];
+  const recentThemesBlock = recentThemes.length
+    ? `\n\nRECENT THEMES (last ~30 days) — do not repeat any of these, and don't write something too similar in meaning or wording either. A theme repeating within a month reads as broken:\n${recentThemes.join(", ")}`
+    : "";
   return `Generate today's theme and word set. Date: ${date}
 
 TODAY'S DOMAIN — build the theme from inside this lane, don't stray:
-${domain}
+${domain}${recentThemesBlock}
 
 ━━━ THEME ━━━
 
@@ -142,9 +145,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Fetch recent themes so the AI doesn't repeat itself
+    const { data: recentThemeRows } = await supabaseAdmin
+      .from("daily_themes")
+      .select("theme")
+      .lt("date", pacificDateStr)
+      .order("date", { ascending: false })
+      .limit(30);
+    const recentThemes = (recentThemeRows ?? [])
+      .map((r) => r.theme)
+      .filter((t): t is string => Boolean(t));
+
     // Generate theme with Anthropic
     console.log(`Generating theme for ${pacificDateStr}...`);
-    const generated = await generateThemeFromAI(pacificDateStr);
+    const generated = await generateThemeFromAI(pacificDateStr, recentThemes);
 
     // Insert into Supabase
     const { error: insertError } = await supabaseAdmin
@@ -176,12 +190,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-async function generateThemeFromAI(date: string) {
+async function generateThemeFromAI(date: string, recentThemes: string[] = []) {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 300,
     system: THEME_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: buildThemeUserPrompt(date) }],
+    messages: [
+      { role: "user", content: buildThemeUserPrompt(date, recentThemes) },
+    ],
   });
 
   const text =
