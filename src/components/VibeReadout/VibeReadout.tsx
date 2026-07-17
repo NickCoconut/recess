@@ -116,7 +116,9 @@ export default function VibeReadout({
   }, [submitData, themeData]);
 
   const displayReadout = error
-    ? "Diagnosis: signal lost · try again later"
+    ? mode === "game"
+      ? "Diagnosis: signal lost · try again later"
+      : "Signal lost. Try again later."
     : readout;
 
   const parsed =

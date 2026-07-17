@@ -2,12 +2,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-import { getPacificDate } from "../src/lib/helper";
 import type { Database, Tables } from "../src/types/database.types";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+function getPacificDate(): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Los_Angeles",
+  });
+}
 
 export const GAME_SYSTEM_PROMPT = `You are the vibe readout engine for Recess — a daily creative sentence game.
 

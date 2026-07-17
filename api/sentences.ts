@@ -2,12 +2,17 @@ import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
 
-import { getPacificDate } from "../src/lib/helper";
 import type { Database } from "../src/types/database.types";
 
 interface ModerationResult {
   flagged: boolean;
   categories: string[];
+}
+
+function getPacificDate(): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Los_Angeles",
+  });
 }
 
 async function moderate(sentence: string): Promise<ModerationResult> {
