@@ -9,6 +9,7 @@ export type WeatherGroup =
 
 export type WeatherConfig = {
   videos: [string, string, string];
+  sound: string;
   overlayOpacity: number;
 };
 
@@ -21,6 +22,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859688/clear_day_2_igaupb.mp4`,
       `${CDN}/v1779860607/clear_day_3_bmauu8.mp4`,
     ],
+    sound: "/audio/sea-waves-with-birds-loop.mp3",
     overlayOpacity: 0.45,
   },
   Clear_night: {
@@ -29,6 +31,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859691/clear_night_2_uy6bii.mp4`,
       `${CDN}/v1779859692/clear_night_3_no6khf.mp4`,
     ],
+    sound: "/audio/space-night.mp3",
     overlayOpacity: 0.25,
   },
   Cloudy: {
@@ -37,6 +40,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859695/cloudy_2_xlkyxg.mp4`,
       `${CDN}/v1779859699/cloudy_3_br8tee.mp4`,
     ],
+    sound: "/audio/wind-blowing-ambience.mp3",
     overlayOpacity: 0.5,
   },
   Rain: {
@@ -45,6 +49,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859707/rain_2_qkjnxh.mp4`,
       `${CDN}/v1779859708/rain_3_kv10pf.mp4`,
     ],
+    sound: "/audio/light-rain-loop.mp3",
     overlayOpacity: 0.45,
   },
   Thunderstorm: {
@@ -53,6 +58,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859714/thunderstorm_2_um6ooe.mp4`,
       `${CDN}/v1779859716/thunderstorm_3_rqytrt.mp4`,
     ],
+    sound: "/audio/rain-and-thunder-storm.mp3",
     overlayOpacity: 0.25,
   },
   Snow: {
@@ -61,6 +67,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859710/snow_2_r0gciu.mp4`,
       `${CDN}/v1779859711/snow_3_zsjn5v.mp4`,
     ],
+    sound: "/audio/footsteps-on-the-snow.mp3",
     overlayOpacity: 0.5,
   },
   Atmosphere: {
@@ -69,6 +76,7 @@ export const weatherConfig: Record<WeatherGroup, WeatherConfig> = {
       `${CDN}/v1779859703/fog_2_kevjbj.mp4`,
       `${CDN}/v1779859708/fog_3_rdlpme.mp4`,
     ],
+    sound: "/audio/wind-blowing-ambience.mp3",
     overlayOpacity: 0.35,
   },
 };

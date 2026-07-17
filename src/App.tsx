@@ -23,6 +23,8 @@ function App() {
   const [userOpacity, setUserOpacity] = useState<number | null>(null);
   const [sentenceId, setSentenceId] = useState<string | null>(null);
   const [savedToProfile, setSavedToProfile] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundVolume, setSoundVolume] = useState(0.35);
 
   const { ensureSession, userId } = useAuth();
   const { weather } = useWeather();
@@ -83,11 +85,19 @@ function App() {
   return (
     <>
       <Analytics />
-      <WeatherBackground weather={weather} />
+      <WeatherBackground
+        weather={weather}
+        soundEnabled={soundEnabled}
+        soundVolume={soundVolume}
+      />
 
       <TopBar
         opacity={overlayOpacity}
         onOpacityChange={setUserOpacity}
+        soundEnabled={soundEnabled}
+        onSoundToggle={() => setSoundEnabled((enabled) => !enabled)}
+        soundVolume={soundVolume}
+        onSoundVolumeChange={setSoundVolume}
         onSignOut={handlePlayAgain}
         onProfileClick={() => {
           if (screen !== "profile") {

@@ -1,17 +1,26 @@
 import { useEffect, useRef } from "react";
 
 import type { WeatherData } from "../../hooks/useWeather";
+import { weatherConfig } from "../../lib/weatherConfig";
 
 type WeatherBackgroundProps = {
   weather: WeatherData;
+  soundEnabled: boolean;
+  soundVolume: number;
 };
 
-export function WeatherBackground({ weather }: WeatherBackgroundProps) {
-  const { videoSrc, city, description, sunInfo } = weather;
+export function WeatherBackground({
+  weather,
+  soundEnabled,
+  soundVolume,
+}: WeatherBackgroundProps) {
+  const { videoSrc, city, description, sunInfo, group } = weather;
+  const soundSrc = weatherConfig[group].sound;
 
   // Show location hint if location is denied
   const showLocationHint = !sunInfo;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -24,6 +33,25 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
     video.load();
     void video.play();
   }, [videoSrc]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = soundVolume;
+  }, [soundVolume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (soundEnabled) {
+      void audio.play().catch(() => {
+        // Browsers can reject playback until the user interacts with the page.
+      });
+    } else {
+      audio.pause();
+    }
+  }, [soundEnabled, soundSrc]);
 
   const capitalizedDescription =
     description.charAt(0).toUpperCase() + description.slice(1);
@@ -58,6 +86,8 @@ export function WeatherBackground({ weather }: WeatherBackgroundProps) {
           objectFit: "cover",
         }}
       />
+
+      <audio ref={audioRef} src={soundSrc} loop preload="none" />
 
       <div
         style={{

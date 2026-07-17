@@ -5,6 +5,8 @@ import {
   Settings2,
   Settings,
   UserRound,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
@@ -18,6 +20,10 @@ interface TopBarProps {
   onSignOut?: () => void;
   onProfileClick?: () => void;
   sentenceId?: string | null;
+  soundEnabled: boolean;
+  onSoundToggle: () => void;
+  soundVolume: number;
+  onSoundVolumeChange: (value: number) => void;
 }
 
 const iconButtonClass =
@@ -65,6 +71,10 @@ export function TopBar({
   onSignOut,
   onProfileClick,
   sentenceId,
+  soundEnabled,
+  onSoundToggle,
+  soundVolume,
+  onSoundVolumeChange,
 }: TopBarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -111,6 +121,16 @@ export function TopBar({
 
       <button
         type="button"
+        className={`${iconButtonClass} order-[-2]`}
+        aria-label={soundEnabled ? "Mute ambience" : "Play ambience"}
+        aria-pressed={soundEnabled}
+        onClick={onSoundToggle}
+      >
+        {soundEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
+      </button>
+
+      <button
+        type="button"
         className={iconButtonClass}
         aria-label="Feedback"
         onClick={() => setFeedbackOpen(true)}
@@ -120,7 +140,7 @@ export function TopBar({
 
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
 
-      <div ref={containerRef} className="relative">
+      <div ref={containerRef} className="relative order-[-1]">
         <button
           type="button"
           className={iconButtonClass}
@@ -133,7 +153,7 @@ export function TopBar({
 
         {settingsOpen && (
           <div
-            className="absolute top-12 right-0 flex w-64 items-center gap-3"
+            className="absolute top-12 right-0 flex w-72 flex-col gap-4"
             style={{
               background: `rgba(0,0,0,${opacity})`,
               backdropFilter: "blur(12px)",
@@ -142,21 +162,43 @@ export function TopBar({
               padding: "1rem",
             }}
           >
-            <span className="shrink-0 text-sm font-medium tracking-wide text-white/80">
-              Opacity:
-            </span>
-            <input
-              type="range"
-              className="opacity-slider"
-              min={0}
-              max={0.9}
-              step={0.01}
-              value={opacity}
-              onChange={(e) => onOpacityChange(Number(e.target.value))}
-            />
-            <span className="shrink-0 font-mono text-xs text-white/40">
-              {Math.round(opacity * 100)}%
-            </span>
+            <div className="grid w-full grid-cols-[4.5rem_1fr_2.5rem] items-center gap-3">
+              <span className="text-sm font-medium tracking-wide text-white/80">
+                Opacity:
+              </span>
+              <input
+                type="range"
+                className="opacity-slider"
+                aria-label="Background opacity"
+                min={0}
+                max={0.9}
+                step={0.01}
+                value={opacity}
+                onChange={(e) => onOpacityChange(Number(e.target.value))}
+              />
+              <span className="text-right font-mono text-xs text-white/40">
+                {Math.round(opacity * 100)}%
+              </span>
+            </div>
+
+            <div className="grid w-full grid-cols-[4.5rem_1fr_2.5rem] items-center gap-3">
+              <span className="text-sm font-medium tracking-wide text-white/80">
+                Volume:
+              </span>
+              <input
+                type="range"
+                className="opacity-slider"
+                aria-label="Ambience volume"
+                min={0}
+                max={1}
+                step={0.01}
+                value={soundVolume}
+                onChange={(e) => onSoundVolumeChange(Number(e.target.value))}
+              />
+              <span className="text-right font-mono text-xs text-white/40">
+                {Math.round(soundVolume * 100)}%
+              </span>
+            </div>
           </div>
         )}
       </div>
