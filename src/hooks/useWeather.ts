@@ -39,7 +39,12 @@ function formatUnixTime(unix: number): string {
 
 const WEATHER_CACHE_KEY = "recess_weather_cache";
 const WEATHER_CACHE_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours
-const WEATHER_RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+const WEATHER_RETRY_DELAYS_MS = [
+  5 * 60 * 1000,
+  15 * 60 * 1000,
+  30 * 60 * 1000,
+  60 * 60 * 1000,
+] as const;
 
 type WeatherCache = {
   timestamp: number;
@@ -100,6 +105,9 @@ export function useWeather(): UseWeatherResult {
     let cancelled = false;
     let refreshInFlight = false;
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAttempt = 0;
+    let nextRetryAt = 0;
+    let locationPermissionDenied = false;
 
     const scheduleRefresh = (delay: number) => {
       if (refreshTimer) clearTimeout(refreshTimer);
@@ -111,10 +119,26 @@ export function useWeather(): UseWeatherResult {
       );
     };
 
+    const scheduleRetry = () => {
+      const delay =
+        WEATHER_RETRY_DELAYS_MS[
+          Math.min(retryAttempt, WEATHER_RETRY_DELAYS_MS.length - 1)
+        ];
+      retryAttempt += 1;
+      nextRetryAt = Date.now() + delay;
+      scheduleRefresh(delay);
+    };
+
     const refreshWeather = async () => {
       if (cancelled || refreshInFlight) return;
       refreshInFlight = true;
       setLoading(true);
+
+      if (!navigator.onLine) {
+        setLoading(false);
+        refreshInFlight = false;
+        return;
+      }
 
       if (!navigator.geolocation) {
         clearCache();
@@ -181,13 +205,16 @@ export function useWeather(): UseWeatherResult {
             if (!cancelled) {
               setWeather(mappedWeatherData);
               setLocationDenied(false);
+              locationPermissionDenied = false;
+              retryAttempt = 0;
+              nextRetryAt = 0;
               scheduleRefresh(WEATHER_CACHE_DURATION_MS);
             }
           } catch (error) {
             console.warn("Weather revalidation failed", error);
             if (!cancelled) {
               if (!readCache()) setWeather(buildFallback());
-              scheduleRefresh(WEATHER_RETRY_DELAY_MS);
+              scheduleRetry();
             }
           } finally {
             if (!cancelled) {
@@ -206,8 +233,12 @@ export function useWeather(): UseWeatherResult {
           setLoading(false);
           refreshInFlight = false;
 
-          if (error.code !== error.PERMISSION_DENIED) {
-            scheduleRefresh(WEATHER_RETRY_DELAY_MS);
+          if (error.code === error.PERMISSION_DENIED) {
+            locationPermissionDenied = true;
+            nextRetryAt = 0;
+            if (refreshTimer) clearTimeout(refreshTimer);
+          } else {
+            scheduleRetry();
           }
         },
         {
@@ -219,6 +250,14 @@ export function useWeather(): UseWeatherResult {
     };
 
     const refreshIfExpired = () => {
+      if (
+        locationPermissionDenied ||
+        refreshInFlight ||
+        Date.now() < nextRetryAt
+      ) {
+        return;
+      }
+
       const cached = readCache();
       if (
         !cached ||
@@ -232,6 +271,11 @@ export function useWeather(): UseWeatherResult {
       if (document.visibilityState === "visible") refreshIfExpired();
     };
 
+    const handleOnline = () => {
+      nextRetryAt = 0;
+      refreshIfExpired();
+    };
+
     const cached = readCache();
     if (cached && Date.now() - cached.timestamp < WEATHER_CACHE_DURATION_MS) {
       scheduleRefresh(
@@ -242,12 +286,14 @@ export function useWeather(): UseWeatherResult {
     }
 
     window.addEventListener("focus", refreshIfExpired);
+    window.addEventListener("online", handleOnline);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
       if (refreshTimer) clearTimeout(refreshTimer);
       window.removeEventListener("focus", refreshIfExpired);
+      window.removeEventListener("online", handleOnline);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
