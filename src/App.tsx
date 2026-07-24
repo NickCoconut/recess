@@ -7,8 +7,10 @@ import { WeatherBackground } from "./components/WeatherBackground/WeatherBackgro
 import { TopBar } from "./components/TopBar/TopBar";
 import VibeReadout from "./components/VibeReadout/VibeReadout";
 import { useAuth } from "./hooks/useAuth";
+import { useRecessDate } from "./hooks/useRecessDate";
 import { useTheme } from "./hooks/useTheme";
 import { useWeather } from "./hooks/useWeather";
+import type { ThemeData } from "./lib/anthropic";
 import { insertSentence } from "./lib/sentences";
 import type { Mode, SubmitData } from "./types/types";
 
@@ -20,6 +22,8 @@ function App() {
     Exclude<Screen, "profile">
   >("game");
   const [submitData, setSubmitData] = useState<SubmitData | null>(null);
+  const [submissionDate, setSubmissionDate] = useState<string | null>(null);
+  const [submittedTheme, setSubmittedTheme] = useState<ThemeData | null>(null);
   const [userOpacity, setUserOpacity] = useState<number | null>(null);
   const [sentenceId, setSentenceId] = useState<string | null>(null);
   const [savedToProfile, setSavedToProfile] = useState(false);
@@ -28,9 +32,18 @@ function App() {
 
   const { ensureSession, userId } = useAuth();
   const { weather } = useWeather();
-  const { themeData, themeId, loading: themeLoading } = useTheme();
+  const { recessDate, refreshSignal } = useRecessDate();
+  const {
+    themeData,
+    themeId,
+    themeDate,
+    loading: themeLoading,
+  } = useTheme(recessDate, refreshSignal);
 
   const overlayOpacity = userOpacity ?? weather.config.overlayOpacity;
+  const themeReady = themeDate === recessDate && themeData !== null;
+  const isNewDay =
+    submissionDate !== null && submissionDate !== recessDate;
 
   const persistSentence = async (
     sentence: string,
@@ -63,6 +76,8 @@ function App() {
   const handlePlayAgain = () => {
     setScreen("game");
     setSubmitData(null);
+    setSubmissionDate(null);
+    setSubmittedTheme(null);
     setSentenceId(null);
     setSavedToProfile(false);
   };
@@ -77,6 +92,8 @@ function App() {
 
     setSentenceId(null);
     setSavedToProfile(false);
+    setSubmissionDate(recessDate);
+    setSubmittedTheme(themeReady ? themeData : null);
     setSubmitData({ sentence, mode, isPublic });
     setScreen("readout");
     void persistSentence(sentence, mode, isPublic);
@@ -111,8 +128,9 @@ function App() {
       {screen === "game" && (
         <GameScreen
           overlayOpacity={overlayOpacity}
-          themeData={themeData}
-          themeLoading={themeLoading}
+          themeData={themeReady ? themeData : null}
+          themeLoading={themeLoading || !themeReady}
+          recessDate={recessDate}
           onSubmit={handleSubmit}
         />
       )}
@@ -121,9 +139,11 @@ function App() {
         <div style={{ display: screen === "readout" ? "contents" : "none" }}>
           <VibeReadout
             overlayOpacity={overlayOpacity}
-            themeData={themeData}
+            themeData={submittedTheme}
             submitData={submitData}
             sentenceId={sentenceId}
+            isNewDay={isNewDay}
+            canPlayToday={isNewDay && themeReady}
             saved={savedToProfile}
             onSaved={() => setSavedToProfile(true)}
             onPlayAgain={handlePlayAgain}

@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { ThemeData } from "../../lib/anthropic";
-import { getPacificDate } from "../../lib/helper";
 import type { Mode } from "../../types/types";
 import { ModeToggle } from "./ModeToggle";
 import { SentenceInput } from "./SentenceInput";
@@ -14,14 +13,16 @@ interface GameScreenProps {
   overlayOpacity: number;
   themeData: ThemeData | null;
   themeLoading: boolean;
+  recessDate: string;
   onSubmit: (sentence: string, mode: Mode, isPublic: boolean) => Promise<void>;
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+function formatDate(dateKey: string): string {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "long",
     day: "2-digit",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -33,6 +34,7 @@ export default function GameScreen({
   overlayOpacity,
   themeData,
   themeLoading,
+  recessDate,
   onSubmit,
 }: GameScreenProps) {
   const [mode, setMode] = useState<Mode>("game");
@@ -43,31 +45,9 @@ export default function GameScreen({
   const [shareToFeed, setShareToFeed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
-  const [alreadyPlayedToday, setAlreadyPlayedToday] = useState(
-    () => localStorage.getItem(DAILY_SUBMISSION_KEY) === getPacificDate(),
+  const [lastSubmissionDate, setLastSubmissionDate] = useState<string | null>(
+    () => localStorage.getItem(DAILY_SUBMISSION_KEY),
   );
-
-  useEffect(() => {
-    const syncDailyLimit = () => {
-      setAlreadyPlayedToday(
-        localStorage.getItem(DAILY_SUBMISSION_KEY) === getPacificDate(),
-      );
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") syncDailyLimit();
-    };
-
-    window.addEventListener("focus", syncDailyLimit);
-    window.addEventListener("pageshow", syncDailyLimit);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("focus", syncDailyLimit);
-      window.removeEventListener("pageshow", syncDailyLimit);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
 
   const hasTyped = sentence.length > 0;
 
@@ -98,9 +78,13 @@ export default function GameScreen({
 
   const maxLength = mode === "game" ? 200 : 500;
 
-  const blockedByDailyLimit = alreadyPlayedToday;
+  const blockedByDailyLimit = lastSubmissionDate === recessDate;
 
-  const canSubmit = !!sentence.trim() && !submitting && !blockedByDailyLimit;
+  const canSubmit =
+    !!sentence.trim() &&
+    !submitting &&
+    !blockedByDailyLimit &&
+    (mode !== "game" || (!themeLoading && !!themeData));
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -110,15 +94,15 @@ export default function GameScreen({
     setSubmitError(false);
     try {
       await onSubmit(sentence, mode, isPublic);
-      localStorage.setItem(DAILY_SUBMISSION_KEY, getPacificDate());
-      setAlreadyPlayedToday(true);
+      localStorage.setItem(DAILY_SUBMISSION_KEY, recessDate);
+      setLastSubmissionDate(recessDate);
     } catch {
       setSubmitting(false);
       setSubmitError(true);
     }
   };
 
-  const today = formatDate(new Date());
+  const today = formatDate(recessDate);
 
   return (
     <>

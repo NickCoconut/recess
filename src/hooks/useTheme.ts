@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
-import { getPacificDate } from "../lib/helper";
+import { useEffect, useState } from "react";
+
 import type { ThemeData } from "../lib/anthropic";
+import { supabase } from "../lib/supabase";
 
 const CACHE_KEY = "recess_theme_cache";
 
@@ -11,35 +11,37 @@ type ThemeCache = {
   themeId: string | null;
 };
 
-export function useTheme() {
+export function useTheme(recessDate: string, refreshSignal: number) {
   const [themeData, setThemeData] = useState<ThemeData | null>(null);
   const [themeId, setThemeId] = useState<string | null>(null);
+  const [themeDate, setThemeDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadTheme() {
       try {
-        const todayPT = getPacificDate();
-
-        // Check cached in localStorage
         const raw = localStorage.getItem(CACHE_KEY);
         if (raw) {
           const cache: ThemeCache = JSON.parse(raw);
-          if (cache.pacificDate === todayPT) {
+          if (cache.pacificDate === recessDate) {
+            if (cancelled) return;
             setThemeData(cache.data);
             setThemeId(cache.themeId ?? null);
+            setThemeDate(cache.pacificDate);
             setLoading(false);
             return;
           }
         }
 
-        // Fetch the most recent theme from Supabase
         const { data, error } = await supabase
           .from("daily_themes")
           .select("id, theme, words, date")
-          .order("date", { ascending: false })
-          .limit(1)
-          .maybeSingle(); // database might be empty
+          .eq("date", recessDate)
+          .maybeSingle();
+
+        if (cancelled) return;
 
         if (data && !error) {
           const theme: ThemeData = {
@@ -48,30 +50,35 @@ export function useTheme() {
           };
           const id = data.id;
 
-          // Only cache if today's theme
-          if (data.date === todayPT) {
-            localStorage.setItem(
-              CACHE_KEY,
-              JSON.stringify({
-                pacificDate: todayPT,
-                data: theme,
-                themeId: id,
-              }),
-            );
-          }
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+              pacificDate: recessDate,
+              data: theme,
+              themeId: id,
+            }),
+          );
 
           setThemeData(theme);
           setThemeId(id);
+          setThemeDate(data.date);
+        } else {
+          setThemeData(null);
+          setThemeId(null);
+          setThemeDate(null);
         }
       } catch (err) {
         console.error("useTheme error:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    loadTheme();
-  }, []);
+    void loadTheme();
+    return () => {
+      cancelled = true;
+    };
+  }, [recessDate, refreshSignal]);
 
-  return { themeData, themeId, loading };
+  return { themeData, themeId, themeDate, loading };
 }

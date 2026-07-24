@@ -17,6 +17,8 @@ interface VibeReadoutProps {
   themeData: ThemeData | null;
   submitData: SubmitData;
   sentenceId: string | null;
+  isNewDay: boolean;
+  canPlayToday: boolean;
   saved: boolean;
   onSaved: () => void;
   onPlayAgain: () => void;
@@ -32,6 +34,8 @@ export default function VibeReadout({
   themeData,
   submitData,
   sentenceId,
+  isNewDay,
+  canPlayToday,
   saved,
   onSaved,
   onPlayAgain,
@@ -297,7 +301,8 @@ export default function VibeReadout({
               <button
                 type="button"
                 onClick={onPlayAgain}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300 hover:text-white"
+                disabled={!canPlayToday}
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full text-base font-medium tracking-wide text-white/80 transition-all duration-300 hover:text-white disabled:cursor-not-allowed disabled:text-white/35"
                 style={{
                   background: "rgba(255,255,255,0.1)",
                   border: "1px solid rgba(255,255,255,0.08)",
@@ -306,7 +311,11 @@ export default function VibeReadout({
                 }}
               >
                 <RefreshCw size={18} />
-                Play again tomorrow
+                {canPlayToday
+                  ? "Play today's recess"
+                  : isNewDay
+                    ? "Today's recess is getting ready"
+                    : "Come back tomorrow"}
               </button>
             </div>
           )}
