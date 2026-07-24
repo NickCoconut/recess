@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { ThemeData } from "../../lib/anthropic";
 import { getPacificDate } from "../../lib/helper";
@@ -46,6 +46,28 @@ export default function GameScreen({
   const [alreadyPlayedToday, setAlreadyPlayedToday] = useState(
     () => localStorage.getItem(DAILY_SUBMISSION_KEY) === getPacificDate(),
   );
+
+  useEffect(() => {
+    const syncDailyLimit = () => {
+      setAlreadyPlayedToday(
+        localStorage.getItem(DAILY_SUBMISSION_KEY) === getPacificDate(),
+      );
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") syncDailyLimit();
+    };
+
+    window.addEventListener("focus", syncDailyLimit);
+    window.addEventListener("pageshow", syncDailyLimit);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", syncDailyLimit);
+      window.removeEventListener("pageshow", syncDailyLimit);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   const hasTyped = sentence.length > 0;
 
